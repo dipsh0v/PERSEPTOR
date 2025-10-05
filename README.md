@@ -1,29 +1,11 @@
 # PERSEPTOR - AI-Powered Detection Engineering Platform
 
-[![DEATHCon 2025](https://img.shields.io/badge/DEATHCon-2025-blue)](https://deathcon.io/)
 [![AI-Powered](https://img.shields.io/badge/AI-Powered-green)](https://openai.com/)
 [![Detection Engineering](https://img.shields.io/badge/Detection-Engineering-orange)](https://attack.mitre.org/)
+[![Python](https://img.shields.io/badge/Python-3.8+-blue)](https://python.org/)
+[![React](https://img.shields.io/badge/React-18+-blue)](https://reactjs.org/)
 
 **PERSEPTOR** is an advanced AI-driven detection engineering platform that revolutionizes threat intelligence through automated analysis, detection rule generation, and intelligent security orchestration.
-
-## 🎯 Featured: DEATHCon 2025 Workshop
-
-**"Human vs AI Detection Engineering Competition"**
-
-- **Date:** November 8-9, 2025
-- **Format:** Live Competition & Hands-on Workshop
-- **Audience:** 512+ Detection Engineers and Threat Hunters
-- **Location:** Multiple locations worldwide + Online
-
-### Workshop Highlights
-
-🤖 **AI-Powered Analysis:** Automated threat intelligence processing  
-⚔️ **Live Competition:** Human experts vs PERSEPTOR AI  
-🔬 **Lab Environment:** Real-time rule validation and testing  
-📺 **Live Streaming:** Real-time audience engagement  
-🏆 **Scoring System:** Comprehensive performance metrics  
-
-[**View Workshop Details**](./workshop/README.md) | [**Quick Start Guide**](./workshop/QUICK_START.md)
 
 ## 🚀 Key Features
 
@@ -45,11 +27,11 @@
 - **Threat Actors:** Attribution and profiling
 - **Tools & Malware:** Identification and classification
 
-### 🔬 Lab Environment
-- **Test Scenarios:** Pre-configured threat scenarios
-- **Event Generation:** Realistic attack simulations
-- **Rule Validation:** Performance testing and metrics
-- **False Positive Analysis:** Comprehensive testing
+### 🔬 Advanced Capabilities
+- **Global Sigma Matching:** Cross-reference with existing rule repositories
+- **Confidence Scoring:** AI-powered rule quality assessment
+- **Multi-format Output:** Support for various SIEM platforms
+- **Interactive Web Interface:** User-friendly dashboard
 
 ## 🏗️ Architecture
 
@@ -67,151 +49,151 @@ PERSEPTOR Platform
 │   ├── Flask API
 │   ├── Processing Pipeline
 │   └── Data Management
-└── 🔬 Lab Environment
-    ├── Test Scenarios
-    ├── Event Generation
+└── 📊 Analytics
+    ├── Performance Metrics
+    ├── Quality Scoring
     └── Validation Framework
 ```
 
+## 📋 Prerequisites
+
+Before running PERSEPTOR, make sure you have:
+
+- **Python 3.8+** installed
+- **Node.js 16+** installed
+- **OpenAI API Key** (for AI features)
+- **Git** (for cloning the repository)
+
 ## 📦 Installation
 
-### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- OpenAI API Key
-
-### Quick Start
+### Step 1: Clone the Repository
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/perseptor.git
-cd perseptor
+git clone https://github.com/dipsh0v/PERSEPTOR.git
+cd PERSEPTOR
+```
+
+### Step 2: Backend Setup (Python/Flask)
+
+```bash
+# Create virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Install Node.js dependencies
-cd perseptor-ui
-npm install
-
-# Set environment variables
-export OPENAI_API_KEY="your-openai-api-key"
-
-# Start the application
-python main.py
+# Set your OpenAI API key
+export OPENAI_API_KEY="your-openai-api-key-here"
 ```
 
-### Workshop Setup
+### Step 3: Frontend Setup (React/TypeScript)
 
 ```bash
-# Navigate to workshop directory
-cd workshop/
+# Navigate to frontend directory
+cd perseptor-ui
 
-# Install workshop dependencies
-pip install -r requirements.txt
-
-# Run workshop demo
-python run_workshop.py --mode demo --duration 30
+# Install Node.js dependencies
+npm install
 ```
 
-[**Detailed Installation Guide**](./workshop/QUICK_START.md)
+### Step 4: Run the Application
+
+**Terminal 1 - Start Backend:**
+```bash
+cd "/path/to/PERSEPTOR"
+source venv/bin/activate  # If using virtual environment
+python3 api/app.py
+```
+
+**Terminal 2 - Start Frontend:**
+```bash
+cd "/path/to/PERSEPTOR/perseptor-ui"
+npm start
+```
+
+**Access the Application:**
+- Open your browser and go to: `http://localhost:3000`
+- Backend API runs on: `http://localhost:5000`
 
 ## 🎮 Usage
 
-### Basic Threat Analysis
+### Web Interface
+
+1. **Start the application** using the installation steps above
+2. **Open your browser** and navigate to `http://localhost:3000`
+3. **Enter your OpenAI API key** in the settings
+4. **Paste a threat report URL** to analyze
+5. **View the results** including:
+   - Threat summary
+   - Extracted IoCs
+   - Generated Sigma rules
+   - YARA rules
+   - MITRE ATT&CK mappings
+
+### API Usage
 
 ```python
-from modules.gpt_module import analyze_url
+import requests
+
+# Analyze a threat report
+response = requests.post('http://localhost:5000/api/analyze', json={
+    'url': 'https://example.com/threat-report',
+    'openai_api_key': 'your-api-key'
+})
+
+result = response.json()
+print(result['threat_summary'])
+```
+
+### Command Line Usage
+
+```python
+from modules.gpt_module import summarize_threat_report, extract_iocs_ttps_gpt
 
 # Analyze a threat report URL
-result = analyze_url(
-    url="https://example.com/threat-report",
+summary = summarize_threat_report(
+    text="Your threat report content here",
     openai_api_key="your-api-key"
 )
 
-print(result.threat_summary)
-print(result.generated_sigma_rules)
+iocs_ttps = extract_iocs_ttps_gpt(
+    text="Your threat report content here",
+    openai_api_key="your-api-key"
+)
+
+print(summary)
+print(iocs_ttps)
 ```
-
-### Workshop Competition
-
-```python
-from workshop.run_workshop import WorkshopOrchestrator
-
-# Initialize workshop
-orchestrator = WorkshopOrchestrator("workshop_config.json")
-
-# Run workshop
-orchestrator.start_workshop()
-```
-
-### Lab Environment Testing
-
-```python
-from workshop.lab_environment_setup import LabEnvironment
-
-# Initialize lab environment
-lab = LabEnvironment()
-
-# Get test scenarios
-scenarios = lab.scenarios
-print(f"Available scenarios: {len(scenarios)}")
-```
-
-## 📊 Workshop Results
-
-### DEATHCon 2025 Performance
-
-| Metric | AI (PERSEPTOR) | Human Average | Improvement |
-|--------|----------------|---------------|-------------|
-| **Rule Generation Speed** | 2.3 rules/min | 0.8 rules/min | 187% |
-| **Detection Accuracy** | 92% | 88% | 4% |
-| **Coverage Completeness** | 95% | 82% | 13% |
-| **False Positive Rate** | 8% | 15% | 47% |
-
-### Key Insights
-
-✅ **AI excels at:** Rapid rule generation, comprehensive coverage, consistent quality  
-✅ **Humans excel at:** Complex reasoning, contextual understanding, creative approaches  
-✅ **Best approach:** Hybrid human-AI collaboration with AI automation and human oversight  
 
 ## 🔧 Configuration
 
-### Workshop Settings
+### Environment Variables
 
-Edit `workshop/workshop_config.json`:
+Create a `.env` file in the root directory:
 
-```json
-{
-  "competition_setup": {
-    "duration_minutes": 45,
-    "max_participants": 512,
-    "streaming_enabled": true
-  },
-  "scoring_system": {
-    "weights": {
-      "rule_quality": 0.3,
-      "rule_count": 0.2,
-      "coverage": 0.2,
-      "innovation": 0.15,
-      "speed": 0.15
-    }
-  }
-}
+```bash
+# OpenAI Configuration
+OPENAI_API_KEY=your-openai-api-key-here
+
+# Flask Configuration
+FLASK_ENV=development
+FLASK_DEBUG=True
+FLASK_PORT=5000
+
+# Frontend Configuration
+REACT_APP_API_URL=http://localhost:5000
 ```
 
-### AI Model Configuration
+### AI Model Settings
 
-```json
-{
-  "ai_configuration": {
-    "model_settings": {
-      "primary_model": "gpt-4.1-2025-04-14",
-      "temperature": 0.1,
-      "reasoning_effort": "high"
-    }
-  }
-}
+Edit `modules/gpt_module.py` to customize AI behavior:
+
+```python
+# Model configuration
+MODEL_NAME = "gpt-4.1-2025-04-14"
+TEMPERATURE = 0.1
+REASONING_EFFORT = "high"
 ```
 
 ## 📈 Performance Metrics
@@ -222,11 +204,76 @@ Edit `workshop/workshop_config.json`:
 - **Accuracy Rate:** 90%+ detection accuracy
 - **Coverage:** 95%+ MITRE ATT&CK technique coverage
 
-### Workshop Metrics
-- **Participant Engagement:** 95%+ active participation
-- **Knowledge Transfer:** 90%+ learning objectives achieved
-- **Platform Adoption:** 85%+ interest in implementation
-- **Community Growth:** 200%+ Discord community growth
+### Supported Formats
+- **Input:** URLs, text files, PDFs
+- **Output:** Sigma rules, YARA rules, SIEM queries
+- **Standards:** MITRE ATT&CK, STIX/TAXII
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+**1. Backend not starting:**
+```bash
+# Check if port 5000 is available
+lsof -i :5000
+# Kill process if needed
+kill -9 <PID>
+```
+
+**2. Frontend not connecting to backend:**
+- Ensure backend is running on `http://localhost:5000`
+- Check CORS settings in `api/app.py`
+- Verify API endpoints are accessible
+
+**3. OpenAI API errors:**
+```bash
+# Verify API key is set
+echo $OPENAI_API_KEY
+# Test API key
+curl -H "Authorization: Bearer $OPENAI_API_KEY" https://api.openai.com/v1/models
+```
+
+**4. Module import errors:**
+```bash
+# Install missing dependencies
+pip install -r requirements.txt
+# Check Python path
+python3 -c "import sys; print(sys.path)"
+```
+
+**5. Node.js/npm issues:**
+```bash
+# Clear npm cache
+npm cache clean --force
+# Delete node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+## 🏗️ Project Structure
+
+```
+PERSEPTOR/
+├── api/                    # Flask backend API
+│   ├── app.py             # Main API application
+│   └── requirements.txt   # API dependencies
+├── modules/               # Core Python modules
+│   ├── gpt_module.py      # AI integration
+│   ├── sigma_module.py    # Sigma rule generation
+│   ├── yara_module.py     # YARA rule generation
+│   ├── ocr_module.py      # OCR processing
+│   ├── qa_module.py       # Quality assurance
+│   └── ...               # Other modules
+├── perseptor-ui/          # React frontend
+│   ├── src/              # Source code
+│   ├── public/           # Static files
+│   └── package.json      # Frontend dependencies
+├── main.py               # Legacy main application
+├── app.py                # Alternative entry point
+├── requirements.txt      # Python dependencies
+└── README.md            # This file
+```
 
 ## 🤝 Contributing
 
@@ -253,22 +300,16 @@ We welcome contributions to PERSEPTOR! Here's how you can help:
 - Add examples and tutorials
 - Translate to other languages
 
-## 📞 Support & Community
+## 📞 Support
 
 ### 🆘 Getting Help
-- **Documentation:** [Workshop Guide](./workshop/README.md)
-- **Issues:** [GitHub Issues](https://github.com/yourusername/perseptor/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/perseptor/discussions)
-
-### 🌐 Community
-- **Discord:** [Join our community](https://discord.gg/perseptor)
-- **Twitter:** [@PerseptorAI](https://twitter.com/PerseptorAI)
-- **LinkedIn:** [PERSEPTOR Page](https://linkedin.com/company/perseptor)
+- **Issues:** [GitHub Issues](https://github.com/dipsh0v/PERSEPTOR/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/dipsh0v/PERSEPTOR/discussions)
 
 ### 📧 Contact
-- **Workshop Leader:** Aytek AYTEMUR
-- **Email:** [Contact Form](mailto:aytek@example.com)
-- **Website:** [https://perseptor.ai](https://perseptor.ai)
+- **Developer:** Aytek AYTEMUR
+- **Email:** [AAytemur1864@outlook.com](mailto:AAytemur1864@outlook.com)
+- **GitHub:** [dipsh0v](https://github.com/dipsh0v)
 
 ## 📄 License
 
@@ -276,7 +317,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **DEATHCon Team** for the amazing conference opportunity
 - **OpenAI** for providing powerful AI capabilities
 - **MITRE ATT&CK** for the comprehensive framework
 - **Sigma Community** for detection rule standards
@@ -284,25 +324,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🚀 Roadmap
 
-### Q4 2025
-- [ ] DEATHCon workshop delivery
-- [ ] Community feedback integration
-- [ ] Performance optimizations
+### Current Version
+- [x] AI-powered threat analysis
+- [x] Sigma and YARA rule generation
+- [x] Web interface
+- [x] API endpoints
+- [x] MITRE ATT&CK mapping
 
-### Q1 2026
+### Upcoming Features
 - [ ] Multi-language support
 - [ ] Advanced AI models
 - [ ] Cloud deployment options
-
-### Q2 2026
 - [ ] Enterprise features
 - [ ] API marketplace
 - [ ] Mobile applications
 
 ---
 
-**Ready to revolutionize detection engineering with AI? Join us at DEATHCon 2025! 🚀**
+**Ready to revolutionize detection engineering with AI? Start using PERSEPTOR today! 🚀**
 
-[![DEATHCon 2025](https://img.shields.io/badge/Register%20for%20DEATHCon-2025-red)](https://deathcon.io/)
-[![GitHub Stars](https://img.shields.io/github/stars/yourusername/perseptor?style=social)](https://github.com/yourusername/perseptor)
-[![Twitter Follow](https://img.shields.io/twitter/follow/PerseptorAI?style=social)](https://twitter.com/PerseptorAI)
+[![GitHub Stars](https://img.shields.io/github/stars/dipsh0v/PERSEPTOR?style=social)](https://github.com/dipsh0v/PERSEPTOR)
+[![GitHub Forks](https://img.shields.io/github/forks/dipsh0v/PERSEPTOR?style=social)](https://github.com/dipsh0v/PERSEPTOR)

@@ -82,10 +82,11 @@ temp/
 *.tmp
 *.temp
 
-# Workshop Specific
-workshop/workshop_report_*.json
-workshop/deployment_report_*.json
-workshop/sample_lab_events.json
+# Reports and Analysis
+*.pdf
+*.csv
+*.xlsx
+analysis_reports/
 
 # Database
 *.db
