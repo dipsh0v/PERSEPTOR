@@ -1,5 +1,5 @@
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import SystemMessage, HumanMessage
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
 import json
 
 def extract_ttps_actors_tools_gpt(text: str, ocr_text: str = "") -> Dict:

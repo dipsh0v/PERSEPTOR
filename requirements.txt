@@ -1,20 +1,47 @@
-requests==2.31.0
-beautifulsoup4==4.12.2
-langchain-openai
-langchain-core
-pytesseract
-Pillow
-cairosvg
-selenium
-PyPDF2
-pysigma
-rich
-nltk
-matplotlib==3.7.2
-seaborn==0.12.2
-numpy
-pandas
-reportlab==4.0.4
-pyyaml
-flask==2.3.3
-flask-cors==6.0.0
+# Core Web Framework
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# HTTP Requests and Web Scraping
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# AI and Language Models
+langchain-openai>=0.1.0
+langchain-core>=0.2.0
+
+# OCR and Image Processing
+pytesseract>=0.3.10
+Pillow>=10.0.0
+cairosvg>=2.7.0
+
+# Web Browser Automation (for dynamic content)
+selenium>=4.15.0
+
+# PDF Processing
+PyPDF2>=3.0.0
+
+# Sigma Rule Processing
+pysigma>=0.10.0
+pyyaml>=6.0.0
+
+# Terminal UI and Display
+rich>=13.0.0
+
+# Natural Language Processing
+nltk>=3.8.0
+
+# Data Visualization (for PDF reports)
+matplotlib>=3.7.0
+seaborn>=0.12.0
+numpy>=1.24.0
+pandas>=2.0.0
+
+# PDF Report Generation
+reportlab>=4.0.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# Data Types and Utilities
+typing-extensions>=4.8.0
