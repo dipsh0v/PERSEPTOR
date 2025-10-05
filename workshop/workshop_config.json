@@ -1,0 +1,347 @@
+{
+  "workshop_metadata": {
+    "title": "PERSEPTOR: AI-Powered Detection Engineering in Action",
+    "subtitle": "Human vs AI Competition at DEATHCon 2025",
+    "conference": "DEATHCon 2025",
+    "date": "2025-11-08",
+    "duration_minutes": 60,
+    "format": "Live Competition",
+    "audience_size": 512,
+    "workshop_leader": "Aytek AYTEMUR",
+    "contact_email": "aytek@example.com",
+    "github_repo": "https://github.com/aytek/perseptor",
+    "website": "https://perseptor.ai"
+  },
+  "competition_setup": {
+    "type": "Human vs AI",
+    "duration_minutes": 45,
+    "max_participants": 512,
+    "streaming_enabled": true,
+    "live_scoring": true,
+    "real_time_validation": true,
+    "lab_environment": {
+      "enabled": true,
+      "pre_loaded_events": true,
+      "test_scenarios": 3,
+      "validation_framework": true
+    }
+  },
+  "scoring_system": {
+    "weights": {
+      "rule_quality": 0.3,
+      "rule_count": 0.2,
+      "coverage": 0.2,
+      "innovation": 0.15,
+      "speed": 0.15
+    },
+    "bonus_points": {
+      "first_rule": 10,
+      "valid_syntax": 5,
+      "mitre_mapping": 3,
+      "low_false_positives": 5,
+      "creative_approach": 8
+    },
+    "penalties": {
+      "invalid_syntax": -5,
+      "high_false_positives": -3,
+      "duplicate_rules": -2
+    }
+  },
+  "threat_reports": {
+    "selection_criteria": {
+      "difficulty_levels": ["easy", "medium", "hard"],
+      "threat_categories": ["APT", "Ransomware", "Cryptocurrency Mining"],
+      "technique_coverage": "comprehensive",
+      "ioc_richness": "high"
+    },
+    "pre_selected_reports": [
+      {
+        "id": "apt29_cozy_bear",
+        "title": "APT29 Cozy Bear Campaign Analysis",
+        "difficulty": "hard",
+        "expected_rules": 8,
+        "techniques_count": 25,
+        "iocs_count": 15
+      },
+      {
+        "id": "lockbit_ransomware",
+        "title": "LockBit 3.0 Ransomware Campaign",
+        "difficulty": "medium",
+        "expected_rules": 6,
+        "techniques_count": 20,
+        "iocs_count": 12
+      },
+      {
+        "id": "xmrig_mining",
+        "title": "XMRig Cryptocurrency Mining Campaign",
+        "difficulty": "easy",
+        "expected_rules": 4,
+        "techniques_count": 15,
+        "iocs_count": 8
+      }
+    ]
+  },
+  "lab_environment": {
+    "test_scenarios": [
+      {
+        "id": "apt29_scenario",
+        "name": "APT29 Cozy Bear Campaign",
+        "difficulty": "hard",
+        "events_count": 50,
+        "malicious_events": 40,
+        "benign_events": 10,
+        "expected_detections": [
+          "powershell_encoded",
+          "psexec_lateral_movement",
+          "registry_persistence",
+          "data_exfiltration"
+        ]
+      },
+      {
+        "id": "lockbit_scenario",
+        "name": "LockBit Ransomware Campaign",
+        "difficulty": "medium",
+        "events_count": 35,
+        "malicious_events": 28,
+        "benign_events": 7,
+        "expected_detections": [
+          "malicious_attachment",
+          "ransomware_execution",
+          "antivirus_disable",
+          "data_exfiltration"
+        ]
+      },
+      {
+        "id": "xmrig_scenario",
+        "name": "XMRig Cryptocurrency Mining",
+        "difficulty": "easy",
+        "events_count": 25,
+        "malicious_events": 20,
+        "benign_events": 5,
+        "expected_detections": [
+          "powershell_download",
+          "mining_execution",
+          "mining_pool_connection",
+          "registry_persistence"
+        ]
+      }
+    ],
+    "event_types": [
+      "process_creation",
+      "network_connection",
+      "registry_modification",
+      "file_creation",
+      "scheduled_task",
+      "service_installation"
+    ],
+    "validation_metrics": [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1_score",
+      "false_positive_rate",
+      "detection_rate"
+    ]
+  },
+  "ai_configuration": {
+    "model_settings": {
+      "primary_model": "gpt-4.1-2025-04-14",
+      "fallback_model": "gpt-4o-mini-2025-04-16",
+      "temperature": 0.1,
+      "reasoning_effort": "high",
+      "max_tokens": 4000
+    },
+    "analysis_pipeline": [
+      "threat_summarization",
+      "ioc_extraction",
+      "ttp_identification",
+      "sigma_rule_generation",
+      "yara_rule_generation",
+      "siem_query_creation",
+      "confidence_scoring",
+      "validation_checking"
+    ],
+    "cost_management": {
+      "max_cost_per_session": 2.0,
+      "estimated_cost_per_participant": 1.5,
+      "total_budget": 768.0,
+      "cost_monitoring": true
+    }
+  },
+  "streaming_setup": {
+    "platform": "Twitch/YouTube",
+    "quality": "1080p",
+    "audio": true,
+    "screen_sharing": true,
+    "participant_cameras": true,
+    "live_chat": true,
+    "moderation": true,
+    "recording": true
+  },
+  "participant_requirements": {
+    "human_participants": {
+      "max_count": 5,
+      "selection_criteria": [
+        "detection_engineering_experience",
+        "sigma_rule_expertise",
+        "yara_rule_knowledge",
+        "mitre_attack_familiarity"
+      ],
+      "equipment": [
+        "laptop_with_development_environment",
+        "screen_sharing_capability",
+        "stable_internet_connection",
+        "microphone_and_camera"
+      ]
+    },
+    "ai_participant": {
+      "name": "PERSEPTOR AI",
+      "capabilities": [
+        "automated_threat_analysis",
+        "rule_generation",
+        "real_time_validation",
+        "confidence_scoring"
+      ],
+      "infrastructure": [
+        "cloud_hosting",
+        "api_access",
+        "monitoring_dashboard",
+        "performance_metrics"
+      ]
+    }
+  },
+  "workshop_agenda": {
+    "pre_competition": {
+      "duration_minutes": 10,
+      "activities": [
+        "introduction_to_perseptor",
+        "competition_rules_explanation",
+        "scoring_system_overview",
+        "lab_environment_demo",
+        "participant_introductions"
+      ]
+    },
+    "competition_phase": {
+      "duration_minutes": 45,
+      "activities": [
+        "threat_report_revelation",
+        "live_rule_generation",
+        "real_time_scoring",
+        "audience_engagement",
+        "progress_tracking"
+      ]
+    },
+    "post_competition": {
+      "duration_minutes": 5,
+      "activities": [
+        "results_announcement",
+        "performance_analysis",
+        "lessons_learned",
+        "q_and_a_session",
+        "next_steps"
+      ]
+    }
+  },
+  "deliverables": {
+    "immediate": [
+      "generated_detection_rules",
+      "performance_metrics",
+      "competition_recording",
+      "participant_feedback"
+    ],
+    "post_workshop": [
+      "comprehensive_analysis_report",
+      "best_practices_guide",
+      "rule_library",
+      "workshop_materials"
+    ],
+    "ongoing": [
+      "lab_environment_access",
+      "discord_community",
+      "follow_up_sessions",
+      "resource_sharing"
+    ]
+  },
+  "success_metrics": {
+    "engagement": [
+      "audience_participation_rate",
+      "chat_interaction_volume",
+      "social_media_mentions",
+      "feedback_quality"
+    ],
+    "learning": [
+      "knowledge_transfer_effectiveness",
+      "skill_demonstration_success",
+      "practical_application_quality",
+      "innovation_demonstration"
+    ],
+    "technical": [
+      "rule_generation_speed",
+      "detection_accuracy",
+      "false_positive_rate",
+      "coverage_completeness"
+    ],
+    "business": [
+      "platform_adoption_interest",
+      "follow_up_engagement",
+      "partnership_opportunities",
+      "brand_recognition"
+    ]
+  },
+  "risk_mitigation": {
+    "technical_risks": [
+      {
+        "risk": "AI API failures",
+        "mitigation": "fallback_models_and_offline_capabilities",
+        "probability": "low",
+        "impact": "medium"
+      },
+      {
+        "risk": "streaming_technical_issues",
+        "mitigation": "backup_streaming_platforms_and_recorded_backup",
+        "probability": "medium",
+        "impact": "high"
+      },
+      {
+        "risk": "lab_environment_failures",
+        "mitigation": "pre_tested_environment_and_offline_scenarios",
+        "probability": "low",
+        "impact": "medium"
+      }
+    ],
+    "logistical_risks": [
+      {
+        "risk": "participant_no_show",
+        "mitigation": "backup_participants_and_solo_demonstration",
+        "probability": "medium",
+        "impact": "low"
+      },
+      {
+        "risk": "audience_engagement_low",
+        "mitigation": "interactive_elements_and_incentives",
+        "probability": "low",
+        "impact": "medium"
+      }
+    ]
+  },
+  "follow_up_activities": {
+    "immediate": [
+      "participant_survey",
+      "performance_analysis",
+      "rule_validation",
+      "feedback_collection"
+    ],
+    "short_term": [
+      "lab_environment_access",
+      "discord_community_setup",
+      "resource_sharing",
+      "follow_up_webinars"
+    ],
+    "long_term": [
+      "partnership_development",
+      "platform_enhancement",
+      "community_building",
+      "future_workshop_planning"
+    ]
+  }
+}

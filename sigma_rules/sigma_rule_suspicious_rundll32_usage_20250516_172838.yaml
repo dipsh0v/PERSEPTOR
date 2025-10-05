@@ -1,0 +1,35 @@
+title: Suspicious rundll32 Usage
+description: Identifies rundll32.exe processes launched with suspicious or uncommon
+  command-line parameters. Attackers often abuse rundll32.exe to execute malicious
+  payloads, bypass security controls, or load unauthorized libraries.
+author: Aytek Aytemur
+date: 2025/05/16
+sigma_rule:
+  title: Suspicious rundll32 Usage
+  id: ec7e5ca5-b6c3-489d-9043-f49f2c62fc6c
+  status: stable
+  description: Detects suspicious rundll32.exe executions which may indicate malicious
+    activity such as code injection or lateral movement.
+  references:
+  - https://attack.mitre.org/techniques/T1218/011/
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+    - Image|endswith: \rundll32.exe
+      CommandLine|contains:
+      - ' -sta '
+      - ' javascript:'
+      - ' #1 '
+      - ' scrobj.dll '
+      - ' url.dll,FileProtocolHandler'
+    condition: selection
+  falsepositives:
+  - Administrator usage of rundll32 with legitimate DLLs
+  - Software updaters or installers calling rundll32.exe
+  level: high
+  tags:
+  - attack.execution
+  - attack.defense_evasion
+  - attack.T1218.011
