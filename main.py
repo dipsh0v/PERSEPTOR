@@ -164,7 +164,7 @@ def main():
 
     try:
         display_logo()
-        openai_api_key = "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"
+        openai_api_key = ""
 
         while True:
             print_colored("\nOptions:", "bold cyan")
