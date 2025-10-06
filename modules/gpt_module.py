@@ -37,14 +37,22 @@ def get_openai_model(model_name: str = None, temperature: float = None,
         temperature = DEFAULT_TEMPERATURE
 
     # The new O-series doesn't support temperature param
-    O_SERIES_MODELS = {"o1", "o3-mini", "o3-mini-2024-09-12", "o4-mini-2025-04-16"}  # Latest reasoning models
+    O_SERIES_MODELS = {
+        "o1", "o1-mini", "o1-preview", "o1-preview-2024-09-12",
+        "o3", "o3-mini", "o3-mini-2024-09-12", 
+        "o4", "o4-mini", "o4-mini-2025-04-16"
+    }  # Latest reasoning models
 
+    print(f"[DEBUG] Model: {model_name}, Is O-series: {model_name in O_SERIES_MODELS}")
+    
     if model_name in O_SERIES_MODELS:
+        print(f"[DEBUG] Using O-series model without temperature")
         llm = ChatOpenAI(
             model=model_name,
             openai_api_key=openai_api_key
         )
     else:
+        print(f"[DEBUG] Using regular model with temperature: {temperature}")
         llm = ChatOpenAI(
             model=model_name,
             openai_api_key=openai_api_key,

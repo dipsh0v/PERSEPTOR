@@ -530,7 +530,7 @@ class RuleConfidenceCalculator:
         return result
 
 class SigmaQA:
-    def __init__(self, openai_api_key: str = "", model_name: str = "o1"):
+    def __init__(self, openai_api_key: str = "", model_name: str = "gpt-4.1-2025-04-14"):
         """
         Initialize the Q&A system.
         
@@ -829,7 +829,7 @@ Return the response in the following JSON format:
         else:
             print_colored("Rule not saved.", "yellow")
 
-def create_qa_system(openai_api_key: str = "", model_name: str = "o1") -> SigmaQA:
+def create_qa_system(openai_api_key: str = "", model_name: str = "gpt-4.1-2025-04-14") -> SigmaQA:
     """
     Create a new Q&A system instance. 
     
