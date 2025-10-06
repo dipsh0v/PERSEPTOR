@@ -336,6 +336,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Ready to revolutionize detection engineering with AI? Start using PERSEPTOR today! 🚀**
-
-[![GitHub Stars](https://img.shields.io/github/stars/dipsh0v/PERSEPTOR?style=social)](https://github.com/dipsh0v/PERSEPTOR)
-[![GitHub Forks](https://img.shields.io/github/forks/dipsh0v/PERSEPTOR?style=social)](https://github.com/dipsh0v/PERSEPTOR)
