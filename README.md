@@ -199,15 +199,11 @@ REASONING_EFFORT = "high"
 ## 📈 Performance Metrics
 
 ### Platform Performance
-- **Analysis Speed:** 30-60 seconds per threat report
-- **Rule Generation:** 2-5 rules per minute
+- **Analysis Speed:** 4-5 minutes per threat report
+- **Rule Generation:** 1-2 minutes per rule
 - **Accuracy Rate:** 90%+ detection accuracy
 - **Coverage:** 95%+ MITRE ATT&CK technique coverage
 
-### Supported Formats
-- **Input:** URLs, text files, PDFs
-- **Output:** Sigma rules, YARA rules, SIEM queries
-- **Standards:** MITRE ATT&CK, STIX/TAXII
 
 ## 🛠️ Troubleshooting
 
@@ -308,7 +304,7 @@ We welcome contributions to PERSEPTOR! Here's how you can help:
 
 ### 📧 Contact
 - **Developer:** Aytek AYTEMUR
-- **Email:** [AAytemur1864@outlook.com](mailto:AAytemur1864@outlook.com)
+- **Email:** [aytek.aytemur@outlook.com](mailto:aytek.aytemur@outlook.com)
 - **GitHub:** [dipsh0v](https://github.com/dipsh0v)
 
 ## 📄 License
@@ -332,12 +328,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] MITRE ATT&CK mapping
 
 ### Upcoming Features
-- [ ] Multi-language support
 - [ ] Advanced AI models
 - [ ] Cloud deployment options
 - [ ] Enterprise features
 - [ ] API marketplace
-- [ ] Mobile applications
 
 ---
 
