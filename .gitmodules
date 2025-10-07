@@ -1,0 +1,4 @@
+[submodule "perseptor-ui"]
+	path = perseptor-ui
+	url = https://github.com/dipsh0v/PERSEPTOR.git
+
