@@ -209,41 +209,109 @@ REASONING_EFFORT = "high"
 
 ### Common Issues
 
-**1. Backend not starting:**
+**1. Wrong Directory Error (Windows/Linux/Mac):**
+
+❌ **Problem:**
 ```bash
-# Check if port 5000 is available
-lsof -i :5000
-# Kill process if needed
-kill -9 <PID>
+C:\Users\AAyte\Desktop\PERSEPTOR-main\perseptor-ui> python api/app.py
+python: can't open file 'C:\Users\...\perseptor-ui\api\app.py': [Errno 2] No such file or directory
 ```
 
-**2. Frontend not connecting to backend:**
+✅ **Solution:**
+Make sure you're in the **project root directory**, not in `perseptor-ui` folder:
+```bash
+# Navigate to project root
+cd C:\Users\AAyte\Desktop\PERSEPTOR-main  # Windows
+cd /Users/username/Desktop/PERSEPTOR      # Mac/Linux
+
+# Then run the backend
+python api/app.py
+```
+
+**2. Cairo Library Error (Windows + Anaconda):**
+
+❌ **Problem:**
+```bash
+OSError: no library called "cairo-2" was found
+cannot load library 'libcairo-2.dll': error 0x7e
+```
+
+This error occurs when `cairosvg` cannot find the Cairo library, which is needed for SVG processing.
+
+✅ **Solution (Windows + Anaconda):**
+
+```bash
+# Step 0: Navigate to project root
+cd C:\Users\AAyte\Desktop\PERSEPTOR-main
+
+# Step 1: Create a new isolated conda environment
+conda create -n perseptor python=3.10 -y
+conda activate perseptor
+
+# Step 2: Install Cairo and its dependencies (includes DLL files)
+conda install -c conda-forge cairo pango gdk-pixbuf libxml2 libxslt zlib -y
+conda install -c conda-forge cairosvg cairocffi -y
+
+# Step 3: Install project dependencies
+pip install -r requirements.txt
+
+# Step 4: Run the backend
+python api/app.py
+```
+
+**Why this works:**
+- `conda-forge` provides pre-compiled Cairo DLL files for Windows
+- Creates an isolated environment to avoid conflicts
+- Installs all required system libraries automatically
+
+**3. Backend not starting:**
+```bash
+# Check if port 5000 is available
+lsof -i :5000  # Mac/Linux
+netstat -ano | findstr :5000  # Windows
+
+# Kill process if needed
+kill -9 <PID>  # Mac/Linux
+taskkill /PID <PID> /F  # Windows
+```
+
+**4. Frontend not connecting to backend:**
 - Ensure backend is running on `http://localhost:5000`
 - Check CORS settings in `api/app.py`
 - Verify API endpoints are accessible
+- Make sure both frontend and backend are running
 
-**3. OpenAI API errors:**
+**5. OpenAI API errors:**
 ```bash
-# Verify API key is set
+# Verify API key is set (Mac/Linux)
 echo $OPENAI_API_KEY
+
+# Verify API key is set (Windows)
+echo %OPENAI_API_KEY%
+
 # Test API key
 curl -H "Authorization: Bearer $OPENAI_API_KEY" https://api.openai.com/v1/models
 ```
 
-**4. Module import errors:**
+**6. Module import errors:**
 ```bash
 # Install missing dependencies
 pip install -r requirements.txt
+
 # Check Python path
 python3 -c "import sys; print(sys.path)"
 ```
 
-**5. Node.js/npm issues:**
+**7. Node.js/npm issues:**
 ```bash
 # Clear npm cache
 npm cache clean --force
+
 # Delete node_modules and reinstall
-rm -rf node_modules package-lock.json
+rm -rf node_modules package-lock.json  # Mac/Linux
+rmdir /s /q node_modules && del package-lock.json  # Windows
+
+# Reinstall
 npm install
 ```
 
