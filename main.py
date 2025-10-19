@@ -111,19 +111,26 @@ def process_manual_url(openai_api_key=""):
         print_additional_sigma_rules_in_tables(more_sigma_rules)
 
         print_rule("Global Sigma Matches")
-        sigma_rules_directory = os.path.join(os.path.expanduser("~"), "Desktop", "SigmaHQ - Process Creation")
-        sigma_rules = load_sigma_rules_local(sigma_rules_directory)
-        print_colored(f"[+] Loaded {len(sigma_rules)} Sigma rules", "green")
+        # Use Global_Sigma_Rules directory within the project
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        sigma_rules_directory = os.path.join(current_dir, "Global_Sigma_Rules")
         
-        # Get global sigma matches
-        sigma_matches = match_sigma_rules_with_report(
-            sigma_rules=sigma_rules,
-            analysis_data=analysis_data,
-            report_text=combined_text.lower(),
-            root_directory=sigma_rules_directory,
-            sigma_repo_path="rules/windows/process_creation",
-            threshold=0.0
-        )
+        if os.path.exists(sigma_rules_directory):
+            sigma_rules = load_sigma_rules_local(sigma_rules_directory)
+            print_colored(f"[+] Loaded {len(sigma_rules)} Sigma rules from {sigma_rules_directory}", "green")
+            
+            # Get global sigma matches
+            sigma_matches = match_sigma_rules_with_report(
+                sigma_rules=sigma_rules,
+                analysis_data=analysis_data,
+                report_text=combined_text.lower(),
+                root_directory=sigma_rules_directory,
+                sigma_repo_path="",  # Empty, we're already in the correct directory
+                threshold=0.0
+            )
+        else:
+            print_colored(f"[!] Sigma rules directory not found: {sigma_rules_directory}", "red")
+            sigma_matches = []
 
     except Exception as e:
         print_colored(f"[!] Error processing URL: {url} - {e}", "red")

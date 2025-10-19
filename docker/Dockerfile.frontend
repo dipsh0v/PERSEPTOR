@@ -1,0 +1,30 @@
+# Build stage
+FROM node:18-alpine as build
+
+WORKDIR /app
+
+# Copy package files
+COPY perseptor-ui/package*.json ./
+
+# Install dependencies
+RUN npm ci --silent
+
+# Copy source code
+COPY perseptor-ui/ .
+
+# Create production build
+RUN npm run build
+
+# Production stage - serve with Nginx
+FROM nginx:alpine
+
+# Copy build files to nginx directory
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Copy Nginx configuration
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 3000
+
+CMD ["nginx", "-g", "daemon off;"]
+

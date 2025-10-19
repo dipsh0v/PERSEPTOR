@@ -8,11 +8,11 @@ from datetime import datetime
 import traceback
 import logging
 
-# Loglama ayarları
+# Logging configuration
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# PERSEPTOR modüllerini import et
+# Import PERSEPTOR modules
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
@@ -80,7 +80,7 @@ def analyze_url():
 
         logger.info(f"Starting analysis for URL: {url}")
 
-        # URL'den içerik çek
+        # Fetch content from URL
         try:
             resp = requests.get(url, timeout=15)
             resp.raise_for_status()
@@ -91,7 +91,7 @@ def analyze_url():
         soup = BeautifulSoup(resp.content, "html.parser")
         text_content = soup.get_text()
 
-        # Görüntüleri topla
+        # Collect images
         try:
             static_imgs = extract_image_urls_static(soup, url)
             dynamic_imgs = get_dynamic_image_urls(url)
@@ -100,7 +100,7 @@ def analyze_url():
             logger.error(f"Error extracting images: {str(e)}")
             all_imgs = []
 
-        # OCR işlemi
+        # OCR processing
         try:
             images_ocr_text = extract_text_from_images(all_imgs)
             combined_text = text_content + "\n\n[IMAGE_OCR_SECTION]\n" + images_ocr_text
@@ -109,7 +109,7 @@ def analyze_url():
             images_ocr_text = ""
             combined_text = text_content
 
-        # Tehdit özeti
+        # Threat summary
         try:
             threat_summary = summarize_threat_report(
                 text=combined_text,
@@ -119,7 +119,7 @@ def analyze_url():
             logger.error(f"Error generating threat summary: {str(e)}")
             threat_summary = "Error generating threat summary"
 
-        # IOC ve TTP analizi
+        # IOC and TTP analysis
         try:
             gpt_json_str = extract_iocs_ttps_gpt(combined_text, openai_api_key=openai_api_key)
             cleaned_json_str = gpt_json_str.replace("```json", "").replace("```", "").strip()
@@ -128,12 +128,12 @@ def analyze_url():
             logger.error(f"Error in IOC/TTP analysis: {str(e)}")
             analysis_data = {"error": "Error in IOC/TTP analysis"}
 
-        # YARA kuralları
+        # YARA rules
         try:
             yara_rules_text = generate_yara_rules(analysis_data)
             yara_rules = []
             
-            # YARA kurallarını ayrıştır
+            # Parse YARA rules
             current_rule = None
             for line in yara_rules_text.split('\n'):
                 if line.startswith('rule '):
@@ -161,7 +161,7 @@ def analyze_url():
             logger.error(f"Error generating YARA rules: {str(e)}")
             yara_rules = []
 
-        # Sigma kuralları
+        # Sigma rules
         try:
             more_sigma_rules = generate_more_sigma_rules_from_article(
                 article_text=text_content,
@@ -169,19 +169,19 @@ def analyze_url():
                 openai_api_key=openai_api_key
             )
             
-            # Sigma kurallarını temizle ve düzenle
+            # Clean and organize Sigma rules
             if more_sigma_rules and not more_sigma_rules.startswith("Error"):
-                # YAML belgelerini ayır
+                # Separate YAML documents
                 rules = []
                 current_rule = []
                 
                 for line in more_sigma_rules.split('\n'):
-                    # Yeni kural başlangıcı
+                    # New rule start
                     if line.strip().startswith('title:'):
                         if current_rule:
                             rules.append('\n'.join(current_rule))
                         current_rule = [line]
-                    # Açıklama metinlerini ve ayraçları atla
+                    # Skip description texts and separators
                     elif not any(skip in line for skip in [
                         '–––––––––––––––––––––––––––––––––––––––––––––––',
                         'These rules can be further tuned',
@@ -192,11 +192,11 @@ def analyze_url():
                         if current_rule or line.strip():
                             current_rule.append(line)
             
-                # Son kuralı ekle
+                # Add last rule
                 if current_rule:
                     rules.append('\n'.join(current_rule))
                 
-                # Temizlenmiş kuralları birleştir
+                # Combine cleaned rules
                 more_sigma_rules = '\n\n'.join(rules)
             else:
                 more_sigma_rules = ""
@@ -227,23 +227,33 @@ def analyze_url():
                 "sentinel": {"description": "Error generating query", "query": "Error", "notes": str(e)}
             }
 
-        # Global Sigma eşleşmeleri
+        # Global Sigma matching
         try:
-            sigma_rules_directory = os.path.join(os.path.expanduser("~"), "Desktop", "SigmaHQ - Process Creation")
-            sigma_rules = load_sigma_rules_local(sigma_rules_directory)
-            sigma_matches = match_sigma_rules_with_report(
-                sigma_rules=sigma_rules,
-                analysis_data=analysis_data,
-                report_text=combined_text.lower(),
-                root_directory=sigma_rules_directory,
-                sigma_repo_path="rules/windows/process_creation",
-                threshold=0.0
-            )
+            # Use Global_Sigma_Rules directory within the project
+            sigma_rules_directory = os.path.join(parent_dir, "Global_Sigma_Rules")
+            
+            if os.path.exists(sigma_rules_directory):
+                logger.info(f"Loading Sigma rules from: {sigma_rules_directory}")
+                sigma_rules = load_sigma_rules_local(sigma_rules_directory)
+                logger.info(f"Loaded {len(sigma_rules)} Sigma rules")
+                sigma_matches = match_sigma_rules_with_report(
+                    sigma_rules=sigma_rules,
+                    analysis_data=analysis_data,
+                    report_text=combined_text.lower(),
+                    root_directory=sigma_rules_directory,
+                    sigma_repo_path="",  # Empty, we're already in the correct directory
+                    threshold=0.0
+                )
+                logger.info(f"Found {len(sigma_matches)} Sigma matches")
+            else:
+                logger.warning(f"Sigma rules directory not found: {sigma_rules_directory}")
+                sigma_matches = []
         except Exception as e:
             logger.error(f"Error in Sigma matching: {str(e)}")
+            logger.error(traceback.format_exc())
             sigma_matches = []
 
-        # Yanıt oluştur
+        # Create response
         response = {
             "threat_summary": threat_summary,
             "analysis_data": {
@@ -391,4 +401,4 @@ def download_rule(rule_id):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000) 
+    app.run(host='0.0.0.0', debug=True, port=5000) 

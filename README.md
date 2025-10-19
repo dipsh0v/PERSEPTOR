@@ -66,14 +66,40 @@ Before running PERSEPTOR, make sure you have:
 
 ## 📦 Installation
 
-### Step 1: Clone the Repository
+### 🐳 Quick Start with Docker (Recommended)
+
+The fastest way to get PERSEPTOR running is with Docker:
+
+```bash
+# Clone the repository
+git clone https://github.com/dipsh0v/PERSEPTOR.git
+cd PERSEPTOR
+
+# Start with Docker Compose
+cd docker
+docker-compose up -d
+```
+
+**That's it!** Access the application at:
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:5000
+
+For detailed Docker setup instructions, see [Docker Documentation](docker/README.md)
+
+---
+
+### 💻 Manual Installation
+
+If you prefer manual setup without Docker:
+
+#### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/dipsh0v/PERSEPTOR.git
 cd PERSEPTOR
 ```
 
-### Step 2: Backend Setup (Python/Flask)
+#### Step 2: Backend Setup (Python/Flask)
 
 ```bash
 # Create virtual environment (recommended)
@@ -87,7 +113,7 @@ pip install -r requirements.txt
 export OPENAI_API_KEY="your-openai-api-key-here"
 ```
 
-### Step 3: Frontend Setup (React/TypeScript)
+#### Step 3: Frontend Setup (React/TypeScript)
 
 ```bash
 # Navigate to frontend directory
@@ -97,7 +123,7 @@ cd perseptor-ui
 npm install
 ```
 
-### Step 4: Run the Application
+#### Step 4: Run the Application
 
 **Terminal 1 - Start Backend:**
 ```bash
