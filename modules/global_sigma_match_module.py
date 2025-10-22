@@ -12,7 +12,10 @@ try:
 except ImportError:
     from yaml import SafeLoader as Loader
 
-SIGMAHQ_BASE_URL = "https://github.com/SigmaHQ/sigma/blob/master"
+import os
+
+# Use environment variable for SigmaHQ base URL
+SIGMAHQ_BASE_URL = os.environ.get('SIGMAHQ_BASE_URL', 'https://github.com/SigmaHQ/sigma/blob/master')
 
 def load_yaml_file(file_path: str, root_directory: str) -> list:
     """

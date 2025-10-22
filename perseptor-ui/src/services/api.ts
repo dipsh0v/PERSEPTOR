@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+// Use relative URL to work with nginx proxy in Docker
+const API_URL = '/api';
 
 export interface YaraRule {
   name: string;

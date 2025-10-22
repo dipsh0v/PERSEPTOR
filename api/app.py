@@ -41,14 +41,15 @@ import uuid
 
 app = Flask(__name__)
 
-# Sadece Flask-CORS kullan
-CORS(app, origins=['http://localhost:3000'], supports_credentials=True)
+# Allow CORS for all origins (nginx will handle the proxying)
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 # Initialize QA system
 qa_system = None
 
-# Rules storage (in production, use a database)
+# Storage (in production, use a database)
 rules_storage = []
+reports_storage = []
 
 def get_qa_system(openai_api_key):
     global qa_system
@@ -60,9 +61,7 @@ def get_qa_system(openai_api_key):
 def analyze_url():
     if request.method == 'OPTIONS':
         response = jsonify({'status': 'ok'})
-        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+        # CORS already handled by Flask-CORS, but add headers for OPTIONS
         return response
     
     try:
@@ -268,6 +267,16 @@ def analyze_url():
             "sigma_matches": sigma_matches
         }
 
+        # Save report to storage
+        report_data = {
+            'id': str(uuid.uuid4()),
+            'url': url,
+            'timestamp': datetime.now().isoformat(),
+            **response
+        }
+        reports_storage.append(report_data)
+        logger.info(f"Saved report with ID: {report_data['id']}")
+
         return jsonify(response)
 
     except Exception as e:
@@ -400,5 +409,41 @@ def download_rule(rule_id):
         logger.error(f"Error downloading rule: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/reports', methods=['GET'])
+def get_reports():
+    """Get all analyzed reports"""
+    try:
+        # Sort by timestamp, newest first
+        sorted_reports = sorted(reports_storage, key=lambda x: x['timestamp'], reverse=True)
+        return jsonify({
+            'reports': sorted_reports,
+            'count': len(sorted_reports)
+        })
+    except Exception as e:
+        logger.error(f"Error fetching reports: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/reports/<report_id>', methods=['DELETE'])
+def delete_report(report_id):
+    """Delete a specific report"""
+    try:
+        global reports_storage
+        initial_count = len(reports_storage)
+        reports_storage = [report for report in reports_storage if report['id'] != report_id]
+        
+        if len(reports_storage) == initial_count:
+            return jsonify({'error': 'Report not found'}), 404
+            
+        logger.info(f"Deleted report with ID: {report_id}")
+        return jsonify({'message': 'Report deleted successfully'})
+    except Exception as e:
+        logger.error(f"Error deleting report: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=5000) 
+    # Use environment variables for host and port
+    host = os.environ.get('BACKEND_HOST', '0.0.0.0')
+    port = int(os.environ.get('BACKEND_PORT', 5000))
+    debug = os.environ.get('FLASK_ENV', 'development') == 'development'
+    
+    app.run(host=host, debug=debug, port=port) 

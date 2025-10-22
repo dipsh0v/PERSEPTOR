@@ -16,6 +16,8 @@ import {
   Zoom,
   Divider,
   Avatar,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -27,26 +29,58 @@ import { AnalysisResult } from '../services/api';
 const Reports: React.FC = () => {
   const [reports, setReports] = useState<Array<AnalysisResult & { id: string; url: string; timestamp: string }>>([]);
   const [showAnimation, setShowAnimation] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
 
   useEffect(() => {
     setShowAnimation(true);
-    const savedReports = localStorage.getItem('analysisReports');
-    if (savedReports) {
-      const parsedReports = JSON.parse(savedReports);
-      // Ensure yara_rules is always an array
-      const formattedReports = parsedReports.map((report: any) => ({
-        ...report,
-        yara_rules: Array.isArray(report.yara_rules) ? report.yara_rules : []
-      }));
-      setReports(formattedReports);
-    }
+    fetchReports();
   }, []);
 
-  const handleDelete = (id: string) => {
-    const updatedReports = reports.filter(report => report.id !== id);
-    setReports(updatedReports);
-    localStorage.setItem('analysisReports', JSON.stringify(updatedReports));
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch('/api/reports');
+      if (response.ok) {
+        const data = await response.json();
+        // Ensure yara_rules is always an array
+        const formattedReports = (data.reports || []).map((report: any) => ({
+          ...report,
+          yara_rules: Array.isArray(report.yara_rules) ? report.yara_rules : []
+        }));
+        setReports(formattedReports);
+      } else {
+        setError('Failed to fetch reports');
+      }
+    } catch (err) {
+      setError('Error fetching reports');
+      console.error('Error fetching reports:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this report?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/reports/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setReports(reports.filter(report => report.id !== id));
+      } else {
+        setError('Failed to delete report');
+      }
+    } catch (err) {
+      setError('Error deleting report');
+      console.error('Error deleting report:', err);
+    }
   };
 
   const handleCopy = (text: string) => {
@@ -101,7 +135,24 @@ const Reports: React.FC = () => {
           }}
         >
           <CardContent>
-            {reports.length === 0 ? (
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+                {error}
+              </Alert>
+            )}
+            
+            {loading ? (
+              <Box 
+                sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center',
+                  py: 8 
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            ) : reports.length === 0 ? (
               <Box 
                 sx={{ 
                   textAlign: 'center', 

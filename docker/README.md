@@ -14,14 +14,27 @@
    cd PERSEPTOR/docker
    ```
 
-2. **Start the containers**
+2. **Configure environment variables (Optional)**
+   ```bash
+   # Copy the environment template
+   cp ENV_TEMPLATE .env
+   
+   # Edit .env to customize ports, paths, and URLs
+   nano .env
+   ```
+   
+   All configuration has sensible defaults, so you can skip this step if you want to use:
+   - Frontend: Port 3000
+   - Backend: Port 5000 (internal only)
+
+3. **Start the containers**
    ```bash
    docker-compose up -d --build
    ```
 
-3. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
+4. **Access the application**
+   - Frontend: http://localhost:3000 (or custom port from .env)
+   - Backend API: Internal only - accessed through nginx proxy
 
 ## Commands
 
@@ -69,24 +82,73 @@ docker-compose exec backend bash
 docker-compose exec frontend sh
 ```
 
+## Environment Variables
+
+All configuration is managed through environment variables. You can either:
+
+1. **Create a .env file** (recommended):
+   ```bash
+   cp ENV_TEMPLATE .env
+   # Edit .env with your values
+   ```
+
+2. **Use environment variables directly**:
+   ```bash
+   FRONTEND_PORT=8080 BACKEND_PORT=5000 docker-compose up
+   ```
+
+### Available Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BACKEND_HOST` | `0.0.0.0` | Backend bind address |
+| `BACKEND_PORT` | `5000` | Backend internal port |
+| `FLASK_ENV` | `development` | Flask environment (development/production) |
+| `FRONTEND_PORT` | `3000` | Frontend external port |
+| `NGINX_PORT` | `3000` | Nginx internal port |
+| `BACKEND_SERVICE` | `backend` | Backend service name in Docker network |
+| `SIGMAHQ_BASE_URL` | `https://github.com/SigmaHQ/sigma/blob/master` | SigmaHQ repository URL |
+| `TESSERACT_CMD` | `/usr/bin/tesseract` | Tesseract OCR binary path |
+| `CHROME_BIN` | `/usr/bin/chromium` | Chrome binary path |
+| `CHROMEDRIVER_PATH` | `/usr/bin/chromedriver` | ChromeDriver path |
+
 ## Production Deployment
 
 For production environments:
 
-1. Update environment variables for production
-2. Change `FLASK_ENV` to `production` in `docker-compose.yml`
-3. Start containers:
+1. **Create .env file**:
    ```bash
-   docker-compose up -d
+   cp ENV_TEMPLATE .env
+   ```
+
+2. **Update environment variables**:
+   ```bash
+   # Edit .env
+   FLASK_ENV=production
+   FRONTEND_PORT=80  # Or your preferred port
+   ```
+
+3. **Start containers**:
+   ```bash
+   docker-compose up -d --build
    ```
 
 ## Troubleshooting
 
 ### Port conflicts
-If ports 3000 or 5000 are already in use, modify the port mappings in `docker-compose.yml`:
-```yaml
-ports:
-  - "8080:3000"  # Alternative port for frontend
+If ports 3000 or 5000 are already in use, change them using environment variables:
+
+**Option 1: Using .env file** (recommended):
+```bash
+# Create or edit .env file
+echo "FRONTEND_PORT=8080" >> .env
+echo "BACKEND_PORT=5001" >> .env
+docker-compose up -d --build
+```
+
+**Option 2: Using command line**:
+```bash
+FRONTEND_PORT=8080 docker-compose up -d
 ```
 
 ### Sigma rules

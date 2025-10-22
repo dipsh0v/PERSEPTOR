@@ -9,8 +9,10 @@ from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from PyPDF2 import PdfReader
+import os
 
-pytesseract.pytesseract.tesseract_cmd = '/usr/local/bin/tesseract'
+# Use environment variable for tesseract path, fallback to common locations
+pytesseract.pytesseract.tesseract_cmd = os.environ.get('TESSERACT_CMD', '/usr/bin/tesseract')
 
 def get_dynamic_image_urls(url, wait_time=5):
     print("[*] Loading dynamic images, starting Selenium...")
@@ -19,6 +21,11 @@ def get_dynamic_image_urls(url, wait_time=5):
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    
+    # Use environment variable for Chrome binary path
+    chrome_bin = os.environ.get('CHROME_BIN', '/usr/bin/chromium')
+    if chrome_bin:
+        chrome_options.binary_location = chrome_bin
 
     try:
         driver = webdriver.Chrome(options=chrome_options)

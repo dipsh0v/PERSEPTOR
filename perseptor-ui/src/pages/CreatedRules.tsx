@@ -84,7 +84,7 @@ const CreatedRules: React.FC = () => {
   const fetchRules = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/rules');
+      const response = await fetch('/api/rules');
       if (response.ok) {
         const data = await response.json();
         setRules(data.rules || []);
@@ -112,7 +112,7 @@ const CreatedRules: React.FC = () => {
 
   const handleDownloadRule = async (rule: Rule) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/rules/${rule.id}/download`);
+      const response = await fetch(`/api/rules/${rule.id}/download`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -132,7 +132,7 @@ const CreatedRules: React.FC = () => {
   const handleDeleteRule = async (ruleId: string) => {
     if (window.confirm('Are you sure you want to delete this rule?')) {
       try {
-        const response = await fetch(`http://localhost:5000/api/rules/${ruleId}`, {
+        const response = await fetch(`/api/rules/${ruleId}`, {
           method: 'DELETE',
         });
         if (response.ok) {

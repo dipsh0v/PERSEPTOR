@@ -543,19 +543,9 @@ const Dashboard: React.FC = () => {
       const analysisResult = await analyzeUrl(url, openaiApiKey);
       console.log('API Response:', analysisResult);
       setAnalysisResult(analysisResult);
-
-      const savedReports = localStorage.getItem('analysisReports');
-      const reports = savedReports ? JSON.parse(savedReports) : [];
       
-      const newReport = {
-        ...analysisResult,
-        id: Date.now().toString(),
-        url: url,
-        timestamp: new Date().toISOString()
-      };
-      
-      reports.unshift(newReport);
-      localStorage.setItem('analysisReports', JSON.stringify(reports));
+      // Reports are now saved automatically on the backend
+      // No need to store in localStorage
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
