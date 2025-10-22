@@ -225,14 +225,13 @@ REASONING_EFFORT = "high"
 - **Analysis Speed:** 4-5 minutes per threat report
 - **Rule Generation:** 1-2 minutes per rule
 - **Accuracy Rate:** 90%+ detection accuracy
-- **Coverage:** 95%+ MITRE ATT&CK technique coverage
 
 
 ## 🛠️ Troubleshooting
 
 ### Common Issues
 
-**1. Cairo Library Error (Windows + Anaconda):**
+**1. Cairo Library Error :**
 
 ❌ **Problem:**
 ```bash
@@ -242,7 +241,7 @@ cannot load library 'libcairo-2.dll': error 0x7e
 
 This error occurs when `cairosvg` cannot find the Cairo library, which is needed for SVG processing.
 
-✅ **Solution (Windows + Anaconda):**
+✅ **Solution :**
 
 ```bash
 # Step 0: Navigate to project root
@@ -319,34 +318,6 @@ rmdir /s /q node_modules && del package-lock.json  # Windows
 npm install
 ```
 
-## 🏗️ Project Structure
-
-```
-PERSEPTOR/
-├── api/                    # Flask backend API
-│   ├── app.py             # Main API application
-│   └── requirements.txt   # API dependencies
-├── modules/               # Core Python modules
-│   ├── gpt_module.py      # AI integration
-│   ├── sigma_module.py    # Sigma rule generation
-│   ├── yara_module.py     # YARA rule generation
-│   ├── ocr_module.py      # OCR processing
-│   ├── qa_module.py       # Quality assurance
-│   └── ...               # Other modules
-├── perseptor-ui/          # React frontend
-│   ├── src/              # Source code
-│   ├── public/           # Static files
-│   └── package.json      # Frontend dependencies
-├── main.py               # Legacy main application
-├── app.py                # Alternative entry point
-├── requirements.txt      # Python dependencies
-└── README.md            # This file
-```
-
-## 🤝 Contributing
-
-We welcome contributions to PERSEPTOR! Here's how you can help:
-
 ### 🐛 Bug Reports
 - Use GitHub Issues
 - Include detailed reproduction steps
@@ -389,21 +360,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **MITRE ATT&CK** for the comprehensive framework
 - **Sigma Community** for detection rule standards
 - **Security Community** for feedback and contributions
-
-## 🚀 Roadmap
-
-### Current Version
-- [x] AI-powered threat analysis
-- [x] Sigma and YARA rule generation
-- [x] Web interface
-- [x] API endpoints
-- [x] MITRE ATT&CK mapping
-
-### Upcoming Features
-- [ ] Advanced AI models
-- [ ] Cloud deployment options
-- [ ] Enterprise features
-- [ ] API marketplace
 
 ---
 
