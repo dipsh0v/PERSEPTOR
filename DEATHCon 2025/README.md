@@ -46,7 +46,7 @@ This hands-on workshop explores how human expertise and AI capabilities compleme
 
 You will receive a public threat report URL at the workshop start.
 
-### Step 1: Initial Reflection (5 min)
+### Step 1: Initial Reflection (≈5 min)
 
 ```
 File: notes/my_approach.md
@@ -60,7 +60,7 @@ Before analyzing, document:
 
 ---
 
-### Step 2: IOC Extraction (20 min)
+### Step 2: IOC Extraction (≈20 min)
 
 **⏰ START TIMER**
 
@@ -88,7 +88,7 @@ Example format:
 
 ---
 
-### Step 3: TTP Extraction (30 min)
+### Step 3: TTP Extraction (≈30 min)
 
 **⏰ START TIMER**
 
@@ -115,7 +115,7 @@ Example format:
 
 ---
 
-### Step 4: MITRE Mapping (10 min)
+### Step 4: MITRE Mapping (≈10 min)
 
 ```
 File: threat_analysis/mitre_mapping.md
@@ -137,7 +137,7 @@ Use: https://attack.mitre.org/
 
 ---
 
-### Step 5: Threat Actors & Tools (10 min)
+### Step 5: Threat Actors & Tools (≈10 min)
 
 ```
 File: threat_analysis/actors_tools.md
@@ -156,11 +156,11 @@ File: threat_analysis/actors_tools.md
 
 ---
 
-### Step 6: Detection Rules (35 min)
+### Step 6: Detection Rules (≈35 min)
 
 **⏰ START TIMER**
 
-**Sigma Rules (25 min):**
+**Sigma Rules (≈25 min):**
 
 ```
 File: threat_analysis/sigma_rules.yaml
@@ -194,7 +194,7 @@ falsepositives:
 level: high
 ```
 
-**YARA Rules (10 min):**
+**YARA Rules (≈10 min):**
 
 ```
 File: threat_analysis/yara_rules.yar
@@ -222,7 +222,7 @@ rule Malware_Campaign_Variant {
 
 ---
 
-### Step 7: SigmaHQ Search (25 min)
+### Step 7: SigmaHQ Search (≈25 min)
 
 **⏰ START TIMER**
 
@@ -254,13 +254,13 @@ Document:
 
 ---
 
-## 🔬 MODULE 2: Detection Rule Creation (30 min)
+## 🔬 MODULE 2: Detection Rule Creation (≈30 min)
 
 Create Sigma rules for these scenarios. **Time each challenge.**
 
 **⏰ START TIMER (total for all 5)**
 
-### Challenge 1: DNS Tunneling (6 min)
+### Challenge 1: DNS Tunneling (≈6 min)
 ```
 File: detection_qa/dns_tunneling.yaml
 
@@ -270,7 +270,7 @@ Scenario: Detect DNS tunneling behavior
 - NXDOMAIN with random subdomains
 ```
 
-### Challenge 2: PowerShell Download (6 min)
+### Challenge 2: PowerShell Download (≈6 min)
 ```
 File: detection_qa/powershell_download.yaml
 
@@ -279,7 +279,7 @@ Scenario: Detect C2 file download via PowerShell
 - Obfuscation attempts
 ```
 
-### Challenge 3: Credential Dumping (6 min)
+### Challenge 3: Credential Dumping (≈6 min)
 ```
 File: detection_qa/credential_dumping.yaml
 
@@ -288,7 +288,7 @@ Scenario: Detect LSASS credential dumping
 - Credential dumping tools
 ```
 
-### Challenge 4: Scheduled Task (6 min)
+### Challenge 4: Scheduled Task (≈6 min)
 ```
 File: detection_qa/scheduled_task.yaml
 
@@ -297,7 +297,7 @@ Scenario: Detect malicious scheduled task
 - Unusual locations
 ```
 
-### Challenge 5: WMI Lateral Movement (6 min)
+### Challenge 5: WMI Lateral Movement (≈6 min)
 ```
 File: detection_qa/wmi_lateral_movement.yaml
 
@@ -310,9 +310,9 @@ Scenario: Detect WMI lateral movement
 
 ---
 
-## 🤖 MODULE 3: PERSEPTOR Comparison (20 min)
+## 🤖 MODULE 3: PERSEPTOR Comparison (≈20 min)
 
-### Part 1: Threat Report Analysis (10 min)
+### Part 1: Threat Report Analysis (≈10 min)
 
 **⏰ START TIMER**
 
@@ -325,7 +325,7 @@ Scenario: Detect WMI lateral movement
 
 ---
 
-### Part 2: Detection QA (10 min)
+### Part 2: Detection QA (≈10 min)
 
 Go to **QA** page and run each challenge:
 
@@ -430,7 +430,7 @@ Comparison: [Which was more thorough/accurate]
 
 ---
 
-## 💭 MODULE 4: Reflection (15 min)
+## 💭 MODULE 4: Reflection (≈15 min)
 
 ```
 File: notes/reflection.md
