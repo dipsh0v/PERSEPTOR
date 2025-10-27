@@ -44,7 +44,7 @@ This hands-on workshop explores how human expertise and AI capabilities compleme
 
 ## 📊 MODULE 1: Threat Report Analysis (110 min)
 
-You will receive a threat intelligence report URL at the workshop start.
+You will receive a public threat report URL at the workshop start.
 
 ### Step 1: Initial Reflection (5 min)
 
