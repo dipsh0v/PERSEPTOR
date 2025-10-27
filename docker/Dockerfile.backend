@@ -30,6 +30,9 @@ RUN pip install --no-cache-dir -r api/requirements.txt
 # Copy application code
 COPY . .
 
+# Ensure Global_Sigma_Rules is present
+COPY Global_Sigma_Rules /app/Global_Sigma_Rules
+
 # Default environment variables (can be overridden by docker-compose)
 ENV CHROME_BIN=/usr/bin/chromium
 ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
