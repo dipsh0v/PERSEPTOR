@@ -404,30 +404,6 @@ netstat -tulpn | grep -E '3000|5000'  # Linux
 lsof -i :3000 -i :5000  # Mac
 ```
 
-## 🏗️ Project Structure
-
-```
-PERSEPTOR/
-├── api/                    # Flask backend API
-│   ├── app.py             # Main API application
-│   └── requirements.txt   # API dependencies
-├── modules/               # Core Python modules
-│   ├── gpt_module.py      # AI integration
-│   ├── sigma_module.py    # Sigma rule generation
-│   ├── yara_module.py     # YARA rule generation
-│   ├── ocr_module.py      # OCR processing
-│   ├── qa_module.py       # Quality assurance
-│   └── ...               # Other modules
-├── perseptor-ui/          # React frontend
-│   ├── src/              # Source code
-│   ├── public/           # Static files
-│   └── package.json      # Frontend dependencies
-├── main.py               # Legacy main application
-├── app.py                # Alternative entry point
-├── requirements.txt      # Python dependencies
-└── README.md            # This file
-```
-
 ## 🤝 Contributing
 
 Welcome contributions to PERSEPTOR! Here's how you can help:
