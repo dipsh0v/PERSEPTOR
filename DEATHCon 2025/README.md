@@ -8,7 +8,6 @@
 ![Detection Engineering](https://img.shields.io/badge/Detection-Engineering-blue?style=for-the-badge&logo=shield&logoColor=white)
 
 **Workshop Leader:** Aytek AYTEMUR  
-**Date:** November 8-9, 2025  
 **Format:** Hybrid (On-site + Virtual)
 
 </div>
@@ -17,183 +16,162 @@
 
 ## 📖 Workshop Overview
 
-This hands-on workshop explores the intersection of human expertise and AI capabilities in detection engineering. You'll analyze threats manually using your own methodology, then compare your approach with PERSEPTOR's AI-driven analysis to understand the strengths, weaknesses, and collaboration opportunities between human and AI workflows.
+This hands-on workshop explores how human expertise and AI capabilities complement each other in detection engineering. You'll analyze threats manually, then compare your approach with PERSEPTOR's AI-driven analysis.
 
-**Goal:** Understand how human expertise and AI capabilities can complement each other in modern detection engineering.
+**Goal:** Understand how human expertise and AI can work together in modern detection engineering.
 
 ---
 
 ## 🎯 Workshop Structure
 
-### 📊 Module 1: Threat Report Analysis (60 minutes)
-Manual threat intelligence extraction and detection rule creation
-
-### 🔬 Module 2: Detection Rule Creation (30 minutes)
-Create Sigma rules from security scenarios using your own methodology
-
-### 🤖 Module 3: AI Comparison (20 minutes)
-Run the same tasks through PERSEPTOR and compare approaches
-
-### 💭 Module 4: Reflection (15 minutes)
-Analyze differences, strengths, and collaboration opportunities
+1. **Module 1: Threat Report Analysis** (110 minutes)
+2. **Module 2: Detection Rule Creation** (30 minutes)  
+3. **Module 3: PERSEPTOR Comparison** (20 minutes)
+4. **Module 4: Reflection** (15 minutes)
 
 ---
 
 ## 📋 Prerequisites
 
-### Required
-- ✅ Text Editor (VS Code, Sublime, etc.)
-- ✅ Web Browser
-- ✅ Timer/Stopwatch (to track your time)
-- ✅ OpenAI API Key for PERSEPTOR - [Get it here](https://platform.openai.com/api-keys)
+- Text Editor (VS Code, Sublime, etc.)
+- Web Browser
+- Timer/Stopwatch
+- OpenAI API Key - [Get it here](https://platform.openai.com/api-keys)
 
-### Knowledge
-- Basic cybersecurity concepts
-- MITRE ATT&CK framework familiarity
-- Understanding of Sigma and YARA formats
-- Log analysis experience
+**Knowledge:** Basic cybersecurity, MITRE ATT&CK, Sigma/YARA formats
 
 ---
 
-## 🚀 Getting Started
-
-### Prepare Your Workspace
-
-```bash
-mkdir deathcon2025_workshop
-cd deathcon2025_workshop
-mkdir threat_analysis detection_qa perseptor_comparison notes
-```
-
----
-
-## 📊 MODULE 1: Threat Report Analysis
+## 📊 MODULE 1: Threat Report Analysis (110 min)
 
 You will receive a threat intelligence report URL at the workshop start.
 
-### 📝 Step 1: Your Approach (5 minutes)
-
-**Before analyzing the report, write down your methodology:**
+### Step 1: Initial Reflection (5 min)
 
 ```
 File: notes/my_approach.md
 
-Reflect on these questions:
-1. When analyzing a threat report, what do you look for FIRST?
-2. What's your systematic approach to intelligence extraction?
-3. What categories of intelligence do you extract?
-4. How do you prioritize extraction?
-5. What detection opportunities do you identify?
+Before analyzing, document:
+1. What do you look for FIRST in a threat report?
+2. What's your systematic approach?
+3. What intelligence categories do you extract?
+4. How do you identify detection opportunities?
 ```
-
-This reflection helps you understand your own methodology before comparing with AI.
 
 ---
 
-### 📝 Step 2: Intelligence Extraction (45 minutes)
+### Step 2: IOC Extraction (20 min)
 
-**⏰ START YOUR TIMER**
-
-#### A. IOC Extraction (10 min)
+**⏰ START TIMER**
 
 ```
 File: threat_analysis/iocs.md
 
 Extract and categorize:
 - IP Addresses
-- Domains
-- URLs
+- Domains & URLs
 - File Hashes (MD5, SHA1, SHA256)
 - Email Addresses
 - Registry Keys
 - File Paths
 - Other indicators
 
-Format:
+Example format:
 ## IP Addresses
-- 192.168.1.100 - [Context from report]
-- 10.0.0.50 - [Context from report]
+- 192.168.1.100 - C2 server (paragraph 3)
 
 ## Domains
-- malicious-domain.com - [Context from report]
+- malicious-domain.com - Primary C2 domain
 ```
+
+**⏰ STOP TIMER**
 
 ---
 
-#### B. TTP Extraction (15 min)
+### Step 3: TTP Extraction (30 min)
+
+**⏰ START TIMER**
 
 ```
 File: threat_analysis/ttps.md
 
-Focus on BEHAVIORS, not just indicators:
-- Attack techniques used
-- Tools and methods
+Focus on BEHAVIORS:
+- Attack techniques
 - Execution patterns
 - Command-line patterns
-- Attack flow
+- Tools and methods
 
-Format:
+Example format:
 ## Initial Access
-- Method: [Description]
-- Evidence: [From report]
+- Spear-phishing with malicious attachment
+- Evidence: [Quote from report]
 
 ## Execution
-- Technique: [Description]
-- Commands: [Patterns]
+- PowerShell with base64 encoding
+- Pattern: powershell.exe -enc [base64]
 ```
+
+**⏰ STOP TIMER**
 
 ---
 
-#### C. MITRE Mapping (10 min)
+### Step 4: MITRE Mapping (10 min)
 
 ```
 File: threat_analysis/mitre_mapping.md
 
-Map behaviors to ATT&CK:
-- Technique ID (e.g., T1566.001)
-- Technique Name
-- Tactic
-- Detection opportunities
+Map behaviors to ATT&CK techniques:
+
+T1566.001 - Phishing: Spearphishing Attachment
+- Tactic: Initial Access
+- Evidence: [From report]
+- Detection: Email analysis, sandbox
+
+T1059.001 - PowerShell
+- Tactic: Execution
+- Evidence: [From report]
+- Detection: Script block logging (Event ID 4104)
+```
 
 Use: https://attack.mitre.org/
-```
 
 ---
 
-#### D. Threat Actors & Tools (5 min)
+### Step 5: Threat Actors & Tools (10 min)
 
 ```
 File: threat_analysis/actors_tools.md
 
-Document:
-- Threat actor names/aliases
-- Attribution confidence
-- Malware families
-- Tools used (custom and commodity)
-- Capabilities
+## Threat Actors
+- Name/Alias: [Name]
+- Confidence: High/Medium/Low
+- Motivation: [Type]
+- Targets: [Sectors]
+
+## Malware & Tools
+- Emotet - Banking Trojan/Loader
+- Mimikatz - Credential dumping
+- [etc.]
 ```
 
 ---
 
-#### E. Detection Rules (20 min)
+### Step 6: Detection Rules (35 min)
 
-Create detection rules based on your analysis:
+**⏰ START TIMER**
 
-**Sigma Rules:**
+**Sigma Rules (25 min):**
+
 ```
 File: threat_analysis/sigma_rules.yaml
 
-Create 3-5 Sigma rules covering:
-- Process execution patterns
-- Network activity (if applicable)
-- File operations
-- Registry modifications
+Create 3-5 Sigma rules
 
-Example structure:
-title: PowerShell Base64 Execution - [Threat Campaign]
+Template:
+title: PowerShell Base64 Execution - [Campaign Name]
 id: [UUID]
 status: experimental
-description: Detects base64-encoded PowerShell execution observed in [campaign]
+description: Detects base64 PowerShell execution from [campaign]
 references:
     - [Report URL]
 author: [Your Name]
@@ -216,160 +194,140 @@ falsepositives:
 level: high
 ```
 
-**YARA Rules:**
+**YARA Rules (10 min):**
+
 ```
 File: threat_analysis/yara_rules.yar
 
-Create 2-3 YARA rules for malware detection
+Create 2-3 YARA rules
 
-Example:
+Template:
 rule Malware_Campaign_Variant {
     meta:
-        description = "Detects [malware] from [campaign]"
+        description = "Detects [malware]"
         author = "[Your Name]"
         date = "2025-11-08"
-        reference = "[Report URL]"
         
     strings:
         $s1 = "unique_string" ascii wide
-        $s2 = "another_pattern" ascii wide
         $c2 = "malicious-domain.com" ascii wide
         
     condition:
         uint16(0) == 0x5A4D and
-        filesize < 5MB and
-        2 of ($s*) or $c2
+        2 of them
 }
 ```
 
-**⏰ STOP TIMER - Record your time**
+**⏰ STOP TIMER**
 
 ---
 
-#### F. SigmaHQ Search (10 min)
+### Step 7: SigmaHQ Search (25 min)
+
+**⏰ START TIMER**
 
 ```
 File: threat_analysis/sigmahq_matches.md
 
-Search https://github.com/SigmaHQ/sigma for:
-- Related techniques (e.g., T1059.001)
-- Malware families
-- Behaviors
+Search https://github.com/SigmaHQ/sigma
+
+Look for:
+- Related techniques (T1059.001, etc.)
+- Malware families mentioned
+- Similar attack behaviors
 
 Document:
-## Found Rules
-- Rule: [Title]
-- Path: [File path in repo]
-- Relevance: [How it applies]
-- Coverage: [What it detects]
-- Gaps: [What it misses]
+## Rule: [Title]
+- Path: rules/windows/process_creation/...
+- Relevance: High/Medium/Low
+- What it covers: [Description]
+- What it misses: [Gaps]
 
-## Coverage Assessment
-- Existing coverage: [Estimate %]
-- Gaps identified: [List]
+## Coverage Summary
+- Existing rules found: X
+- Coverage estimate: ~X%
+- Gaps: [What's not covered]
 - New rules needed: [List]
 ```
 
+**⏰ STOP TIMER**
+
 ---
 
-## 🔬 MODULE 2: Detection Rule Creation
+## 🔬 MODULE 2: Detection Rule Creation (30 min)
 
-Create Sigma rules for these scenarios. **Time yourself for each!**
+Create Sigma rules for these scenarios. **Time each challenge.**
 
-### Challenge 1: DNS Tunneling
+**⏰ START TIMER (total for all 5)**
 
+### Challenge 1: DNS Tunneling (6 min)
 ```
-Scenario: Detect possible DNS Tunneling Behavior
-
-Create a Sigma rule that detects:
-- Unusually long DNS queries
-- Suspicious DNS query patterns
-- NXDOMAIN responses with random subdomains
-
 File: detection_qa/dns_tunneling.yaml
+
+Scenario: Detect DNS tunneling behavior
+- Long DNS queries
+- Suspicious patterns
+- NXDOMAIN with random subdomains
 ```
 
----
-
-### Challenge 2: PowerShell C2 Download
-
+### Challenge 2: PowerShell Download (6 min)
 ```
-Scenario: Detect file download from C2 server using PowerShell
-
-Create a Sigma rule that detects:
-- PowerShell download cmdlets (Invoke-WebRequest, wget, curl)
-- Common obfuscation attempts
-- Suspicious download patterns
-
 File: detection_qa/powershell_download.yaml
+
+Scenario: Detect C2 file download via PowerShell
+- Invoke-WebRequest, wget, curl
+- Obfuscation attempts
 ```
 
----
-
-### Challenge 3: Credential Dumping
-
+### Challenge 3: Credential Dumping (6 min)
 ```
-Scenario: Detect credential dumping via LSASS access
-
-Create a Sigma rule that detects:
-- Unauthorized LSASS memory access
-- Common credential dumping tools
-- Suspicious process handles
-
 File: detection_qa/credential_dumping.yaml
+
+Scenario: Detect LSASS credential dumping
+- LSASS memory access
+- Credential dumping tools
 ```
 
----
-
-### Challenge 4: Scheduled Task Persistence
-
+### Challenge 4: Scheduled Task (6 min)
 ```
-Scenario: Detect malicious scheduled task creation
-
-Create a Sigma rule that detects:
-- Suspicious schtasks.exe usage
-- Tasks from unusual locations
-- Tasks with suspicious actions
-
 File: detection_qa/scheduled_task.yaml
+
+Scenario: Detect malicious scheduled task
+- Suspicious schtasks.exe usage
+- Unusual locations
 ```
 
----
-
-### Challenge 5: WMI Lateral Movement
-
+### Challenge 5: WMI Lateral Movement (6 min)
 ```
-Scenario: Detect lateral movement via WMI
-
-Create a Sigma rule that detects:
-- Remote WMI execution
-- WMI process creation on remote hosts
-- Suspicious WMI activity patterns
-
 File: detection_qa/wmi_lateral_movement.yaml
+
+Scenario: Detect WMI lateral movement
+- Remote WMI execution
+- WMI process creation
 ```
 
-**⏰ Record total time and time per rule**
+**⏰ STOP TIMER - Record total time**
 
 ---
 
-## 🤖 MODULE 3: AI Comparison with PERSEPTOR
+## 🤖 MODULE 3: PERSEPTOR Comparison (20 min)
 
-### Part 1: Threat Report Analysis
+### Part 1: Threat Report Analysis (10 min)
 
 **⏰ START TIMER**
 
 1. Access PERSEPTOR: `http://localhost:3000`
-2. Enter your OpenAI API key
+2. Enter OpenAI API key
 3. Input the same threat report URL
-4. Click "Analyze"
-5. Wait for completion
+4. Click "Analyze" and wait
 
 **⏰ STOP TIMER - Note PERSEPTOR's time**
 
-### Part 2: Detection QA
+---
 
-Access the **QA** page and run each challenge:
+### Part 2: Detection QA (10 min)
+
+Go to **QA** page and run each challenge:
 
 ```
 1. "Create a Sigma rule to detect possible DNS Tunneling Behavior"
@@ -379,11 +337,11 @@ Access the **QA** page and run each challenge:
 5. "Create a Sigma rule to detect lateral movement using Windows Management Instrumentation"
 ```
 
-**⏰ Note PERSEPTOR's time for each**
+**⏰ Note time for each**
 
 ---
 
-## 📊 Comparison Framework
+## 📊 COMPARISON & ANALYSIS
 
 ```
 File: perseptor_comparison/analysis.md
@@ -392,13 +350,19 @@ File: perseptor_comparison/analysis.md
 ### 1. Time Comparison
 
 ```markdown
-## Time Analysis
+| Task | My Time | PERSEPTOR Time |
+|------|---------|----------------|
+| IOC Extraction | X min | X min |
+| TTP Extraction | X min | X min |
+| MITRE Mapping | X min | X min |
+| Actors & Tools | X min | X min |
+| Sigma Rules | X min | X min |
+| YARA Rules | X min | X min |
+| SigmaHQ Search | X min | X min |
+| Detection QA | X min | X min |
+| **Total** | **X min** | **X min** |
 
-| Task | My Time | PERSEPTOR Time | Observations |
-|------|---------|----------------|--------------|
-| Threat Report Analysis | X min | X min | [Notes] |
-| Detection QA (5 rules) | X min | X sec | [Notes] |
-| **Total** | **X min** | **X min** | [Notes] |
+Observations: [Your notes]
 ```
 
 ---
@@ -406,337 +370,168 @@ File: perseptor_comparison/analysis.md
 ### 2. Quality Comparison
 
 ```markdown
-## IOC Extraction
+## IOCs
+My results: X IOCs across Y categories
+PERSEPTOR's results: X IOCs across Y categories
 
-**My Results:**
-- Total IOCs: X
-- Categories: [List]
-
-**PERSEPTOR Results:**
-- Total IOCs: X
-- Categories: [List]
-
-**Comparison:**
-- PERSEPTOR found that I missed: [List]
-- I found that PERSEPTOR missed: [List]
-- Context understanding: [Analysis]
+PERSEPTOR found that I missed: [List]
+I found that PERSEPTOR missed: [List]
 
 ---
 
-## TTP Extraction
+## TTPs
+My approach: [Brief description]
+PERSEPTOR's approach: [Brief description]
 
-**My Results:**
-- Total TTPs: X
-- [Key behaviors identified]
-
-**PERSEPTOR Results:**
-- Total TTPs: X
-- [Key behaviors identified]
-
-**Comparison:**
-- Behavioral understanding: [Analysis]
-- Attack flow comprehension: [Analysis]
+Behavioral understanding: [Comparison notes]
 
 ---
 
 ## MITRE Mapping
+My techniques: [List IDs]
+PERSEPTOR's techniques: [List IDs]
 
-**My Results:**
-- Techniques: [List with IDs]
-
-**PERSEPTOR Results:**
-- Techniques: [List with IDs]
-
-**Comparison:**
-- Accuracy: [Analysis]
-- Coverage: [Analysis]
+Accuracy: [Notes]
 
 ---
 
 ## Detection Rules
 
-### Sigma Rule Comparison
+### Example: DNS Tunneling
 
-**Example: DNS Tunneling**
-
-My Approach:
+My rule:
 ```yaml
 [Your rule]
 ```
 
-PERSEPTOR's Approach:
+PERSEPTOR's rule:
 ```yaml
-[AI rule]
+[PERSEPTOR's rule]
 ```
 
-**Analysis:**
-- Detection coverage: [Comparison]
-- False positive risk: [Comparison]
-- Technical quality: [Comparison]
-- Approach differences: [Analysis]
+Comparison:
+- Coverage: [Notes]
+- False positives: [Notes]
+- Approach: [Key differences]
 
-[Repeat for each rule]
+[Repeat for other significant rules]
 ```
 
 ---
 
-### 3. SigmaHQ Coverage
+### 3. SigmaHQ Research
 
 ```markdown
-## SigmaHQ Repository Search
+My research: X rules in Y minutes
+PERSEPTOR's matches: X rules (automatic)
 
-**My Research:**
-- Rules found: X
-- Time: X min
-- Coverage: [Assessment]
-
-**PERSEPTOR's Matches:**
-- Rules found: X
-- Time: Automatic
-- Coverage: [Assessment]
-
-**Comparison:**
-- Thoroughness: [Analysis]
-- Accuracy: [Analysis]
+Comparison: [Which was more thorough/accurate]
 ```
 
 ---
 
-## 💭 MODULE 4: Reflection & Discussion
+## 💭 MODULE 4: Reflection (15 min)
 
 ```
 File: notes/reflection.md
 ```
 
-### A. Time & Efficiency
+### Key Questions to Answer
 
 ```markdown
-## Speed Analysis
+## 1. Speed vs Quality
+- Was PERSEPTOR faster? By how much?
+- Did speed affect quality?
+- When does speed matter? When doesn't it?
 
-- PERSEPTOR was X times faster
-- Time matters for: [Use cases]
-- Speed-quality trade-offs: [Observations]
-```
+## 2. Human Strengths
+What did I do better than PERSEPTOR?
+1. [Strength + example]
+2. [Strength + example]
+3. [Strength + example]
 
----
+## 3. AI Strengths
+What did PERSEPTOR do better than me?
+1. [Strength + example]
+2. [Strength + example]
+3. [Strength + example]
 
-### B. Strengths & Weaknesses
+## 4. What Each Missed
+Intelligence/patterns I missed: [List]
+Intelligence/patterns PERSEPTOR missed: [List]
 
-```markdown
-## What Humans Excel At
+Why did these gaps occur? [Analysis]
 
-1. [Strength] - Example: [From workshop]
-2. [Strength] - Example: [From workshop]
-3. [Strength] - Example: [From workshop]
+## 5. Trust & Validation
+Would I use my rules in production? [Yes/No + why]
+Would I use PERSEPTOR's rules without review? [Yes/No + why]
 
-## What AI Excels At
+What validation is needed for:
+- My rules: [List]
+- PERSEPTOR's rules: [List]
 
-1. [Strength] - Example: [From workshop]
-2. [Strength] - Example: [From workshop]
-3. [Strength] - Example: [From workshop]
+## 6. Collaboration Model
+How should human and AI work together?
 
-## Human Limitations
+| Task | Who Should Do It | Why |
+|------|-----------------|-----|
+| Initial triage | Human/AI/Both | [Reason] |
+| IOC extraction | Human/AI/Both | [Reason] |
+| Behavioral analysis | Human/AI/Both | [Reason] |
+| Rule creation | Human/AI/Both | [Reason] |
+| Validation | Human/AI/Both | [Reason] |
 
-1. [Limitation] - Impact: [Analysis]
-2. [Limitation] - Impact: [Analysis]
+## 7. Future Outlook
+Will AI replace detection engineers? [Your view + reasoning]
 
-## AI Limitations
-
-1. [Limitation] - Impact: [Analysis]
-2. [Limitation] - Impact: [Analysis]
-```
-
----
-
-### C. What Each Missed
-
-```markdown
-## Intelligence I Missed
-
-1. [Item] - Why: [Reason] - Severity: [Impact]
-2. [Item] - Why: [Reason] - Severity: [Impact]
-
-## Intelligence PERSEPTOR Missed
-
-1. [Item] - Why: [Reason] - Severity: [Impact]
-2. [Item] - Why: [Reason] - Severity: [Impact]
-
-## Detection Logic Gaps
-
-**In my rules:** [Analysis]
-**In AI rules:** [Analysis]
-```
-
----
-
-### D. Trust & Validation
-
-```markdown
-## Would I Use These Rules in Production?
-
-**My Own Rules:**
-- Trust level: X/10
-- What needs validation: [List]
-- What needs improvement: [List]
-
-**AI-Generated Rules:**
-- Trust level: X/10
-- What needs validation: [List]
-- What needs improvement: [List]
-
-## Validation Requirements
-
-For AI rules, I would always validate:
-1. [Aspect]
-2. [Aspect]
-3. [Aspect]
-```
-
----
-
-### E. Collaboration Model
-
-```markdown
-## How Should Human & AI Work Together?
-
-**Proposed Workflow:**
-
-1. [Step] - Performed by: Human/AI - Reason: [Why]
-2. [Step] - Performed by: Human/AI - Reason: [Why]
-3. [Step] - Performed by: Human/AI - Reason: [Why]
-
-**Best Division of Labor:**
-
-| Task | Best Performed By | Reason |
-|------|------------------|--------|
-| Initial triage | Human/AI | [Reason] |
-| IOC extraction | Human/AI | [Reason] |
-| Behavioral analysis | Human/AI | [Reason] |
-| Rule generation | Human/AI | [Reason] |
-| Validation | Human/AI | [Reason] |
-| Context understanding | Human/AI | [Reason] |
-
-**Collaboration Benefits:**
-- [Benefit]
-- [Benefit]
-```
-
----
-
-### F. Key Insights
-
-```markdown
-## What I Learned
-
-**About my own methodology:**
-- [Insight]
-- [Insight]
-
-**About AI capabilities:**
-- [Insight]
-- [Insight]
-
-**About detection engineering:**
-- [Insight]
-- [Insight]
-
-## How I'll Change My Approach
-
-**Will start using AI for:**
-1. [Use case] - Because: [Reason]
-2. [Use case] - Because: [Reason]
-
-**Will keep doing manually:**
-1. [Task] - Because: [Reason]
-2. [Task] - Because: [Reason]
-
-**Will always validate:**
-- [What AI produces]
-```
-
----
-
-### G. Future Perspective
-
-```markdown
-## The Future of Detection Engineering
-
-**In 1 year:**
-- [Prediction about AI role]
-- [Prediction about human role]
-
-**In 5 years:**
-- [Prediction]
-
-**Will AI replace detection engineers?**
-My view: [Yes/No/Partially] - Because: [Detailed reasoning based on workshop]
-
-**Skills humans will need:**
+Skills humans will need in AI era:
 1. [Skill]
 2. [Skill]
 3. [Skill]
+
+How will you change your workflow? [Action items]
 ```
 
 ---
 
-## 📚 Essential Resources
+## 📚 Resources
 
-### MITRE ATT&CK
-- Website: https://attack.mitre.org/
-- Navigator: https://mitre-attack.github.io/attack-navigator/
-
-### Sigma
-- Repository: https://github.com/SigmaHQ/sigma
-- Creation Guide: https://github.com/SigmaHQ/sigma/wiki/Rule-Creation-Guide
-- Specification: https://github.com/SigmaHQ/sigma-specification
-
-### YARA
-- Documentation: https://yara.readthedocs.io/
-- Rules Repository: https://github.com/Yara-Rules/rules
+**MITRE ATT&CK:** https://attack.mitre.org/  
+**Sigma Repository:** https://github.com/SigmaHQ/sigma  
+**Sigma Guide:** https://github.com/SigmaHQ/sigma/wiki/Rule-Creation-Guide  
+**YARA Docs:** https://yara.readthedocs.io/  
+**PERSEPTOR:** https://github.com/dipsh0v/PERSEPTOR
 
 ---
 
-## 📧 Contact & Community
+## 📧 Contact
 
-**Workshop Leader:**
-- Aytek AYTEMUR
-- Email: aytek.aytemur@outlook.com
-- GitHub: [dipsh0v](https://github.com/dipsh0v)
-- PERSEPTOR: https://github.com/dipsh0v/PERSEPTOR
+**Aytek AYTEMUR**  
+Email: aytek.aytemur@outlook.com  
+GitHub: [dipsh0v](https://github.com/dipsh0v)
 
-**Share Your Experience:**
-- #DEATHCon2025
-- #PERSEPTOR
-- #DetectionEngineering
+**Share:** #DEATHCon2025 #PERSEPTOR #DetectionEngineering
 
 ---
 
 ## ⚠️ Important Notes
 
-### Ethics & Privacy
-- Use for educational purposes only
-- Don't analyze classified/proprietary reports without authorization
+- Educational purposes only
 - Respect data handling policies
-
-### API Usage
-- Monitor OpenAI API costs
-- Set usage limits
+- Monitor API costs
 - Keep API keys secure
 
 ---
 
 <div align="center">
 
-## 🎯 Workshop Goals
+## 🎯 Remember
 
 **This workshop is about learning, not competing.**
 
-Understand the unique strengths of human expertise and AI capabilities.  
-Discover how they can work together to improve detection engineering.  
-Share knowledge and insights with the community.
+Discover how human expertise and AI capabilities can work together  
+to improve detection engineering.
 
----
-
-*DEATHCon 2025 - Detection Engineering and Threat Hunting Conference*  
+**DEATHCon 2025 - Detection Engineering and Threat Hunting Conference**
 
 </div>
