@@ -1,11 +1,10 @@
-# 🎯 DEATHCon 2025 Amsterdam - PERSEPTOR Workshop
+# 🎯 DEATHCon 2025 - PERSEPTOR Workshop
 
 ## Human & AI: Detection Engineering Collaboration
 
 <div align="center">
 
 ![DEATHCon 2025](https://img.shields.io/badge/DEATHCon-2025-red?style=for-the-badge&logo=security&logoColor=white)
-![Amsterdam](https://img.shields.io/badge/Amsterdam-Netherlands-orange?style=for-the-badge&logo=location&logoColor=white)
 ![Detection Engineering](https://img.shields.io/badge/Detection-Engineering-blue?style=for-the-badge&logo=shield&logoColor=white)
 
 **Workshop Leader:** Aytek AYTEMUR  
@@ -738,7 +737,6 @@ Share knowledge and insights with the community.
 
 ---
 
-*DEATHCon 2025 Amsterdam - Detection Engineering and Threat Hunting Conference*  
-*November 8-9, 2025 - The Netherlands*
+*DEATHCon 2025 - Detection Engineering and Threat Hunting Conference*  
 
 </div>
