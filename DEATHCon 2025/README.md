@@ -38,7 +38,7 @@ This hands-on workshop explores how human expertise and AI capabilities compleme
 - Timer/Stopwatch
 - OpenAI API Key - [Get it here](https://platform.openai.com/api-keys)
 
-**Knowledge:** Basic cybersecurity, MITRE ATT&CK, Sigma/YARA formats
+**Knowledge:** Basic cybersecurity (detection engineering, threat intelligence), MITRE ATT&CK, Sigma/YARA formats
 
 ---
 
