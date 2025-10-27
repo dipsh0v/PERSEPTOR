@@ -57,8 +57,13 @@ PERSEPTOR Platform
 
 ## 📋 Prerequisites
 
-Before running PERSEPTOR, make sure you have:
+### For Docker Setup (Recommended):
+- **Docker** (20.10+)
+- **Docker Compose** (1.29+)
+- **OpenAI API Key** (for AI features)
+- **Git** (for cloning the repository)
 
+### For Manual Setup:
 - **Python 3.8+** installed
 - **Node.js 16+** installed
 - **OpenAI API Key** (for AI features)
@@ -81,10 +86,24 @@ docker-compose up -d
 ```
 
 **That's it!** Access the application at:
+
+**For Local Development:**
 - **Frontend:** http://localhost:3000
 - **Backend API:** http://localhost:5000
 
+**For Remote/SSH Server:**
+- **Frontend:** http://YOUR_SERVER_IP:3000
+- **Backend API:** http://YOUR_SERVER_IP:5000
+- Replace `YOUR_SERVER_IP` with your server's IP address or hostname (e.g., 192.168.1.100, or Tailscale hostname)
+
 For detailed Docker setup instructions, see [Docker Documentation](docker/README.md)
+
+**📝 Important Notes for Remote/SSH Server Deployment:**
+- Ensure ports 3000 (frontend) and 5000 (backend) are accessible
+- For cloud providers, configure security groups/firewall rules
+- For VPN/Tailscale setups, the application works seamlessly with your network
+- CORS is pre-configured to work with both local and remote access
+- No additional configuration needed - just access via your server's IP or hostname
 
 ---
 
@@ -108,6 +127,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install Python dependencies
 pip install -r requirements.txt
+
+# Set your OpenAI API key
+export OPENAI_API_KEY="your-openai-api-key-here"
 ```
 
 #### Step 3: Frontend Setup (React/TypeScript)
@@ -136,15 +158,18 @@ npm start
 ```
 
 **Access the Application:**
-- Open your browser and go to: `http://localhost:3000`
-- Backend API runs on: `http://localhost:5000`
+- **Local:** Open your browser and go to: `http://localhost:3000`
+- **Remote Server:** Access via: `http://YOUR_SERVER_IP:3000` (replace with your server's IP)
+- Backend API runs on port 5000 (use same hostname/IP as frontend)
 
 ## 🎮 Usage
 
 ### Web Interface
 
 1. **Start the application** using the installation steps above
-2. **Open your browser** and navigate to `http://localhost:3000`
+2. **Open your browser** and navigate to:
+   - Local: `http://localhost:3000`
+   - Remote/SSH Server: `http://YOUR_SERVER_IP:3000` (replace with your server's IP or hostname)
 3. **Enter your OpenAI API key** in the settings
 4. **Paste a threat report URL** to analyze
 5. **View the results** including:
@@ -159,8 +184,13 @@ npm start
 ```python
 import requests
 
+# Set your API base URL
+# For local: http://localhost:5000
+# For remote server: http://YOUR_SERVER_IP:5000
+API_BASE_URL = 'http://localhost:5000'
+
 # Analyze a threat report
-response = requests.post('http://localhost:5000/api/analyze', json={
+response = requests.post(f'{API_BASE_URL}/api/analyze', json={
     'url': 'https://example.com/threat-report',
     'openai_api_key': 'your-api-key'
 })
@@ -204,9 +234,19 @@ FLASK_ENV=development
 FLASK_DEBUG=True
 FLASK_PORT=5000
 
-# Frontend Configuration
+# Frontend Configuration (for Manual Setup)
+# For local development:
 REACT_APP_API_URL=http://localhost:5000
+
+# For remote/SSH server deployment:
+# REACT_APP_API_URL=http://YOUR_SERVER_IP:5000
+# Replace YOUR_SERVER_IP with your actual server IP or hostname
 ```
+
+**Note for Docker Users:**
+- Docker setup automatically handles API URL configuration
+- Frontend dynamically detects the backend URL based on your access method
+- No manual configuration needed for API endpoints
 
 ### AI Model Settings
 
@@ -225,13 +265,14 @@ REASONING_EFFORT = "high"
 - **Analysis Speed:** 4-5 minutes per threat report
 - **Rule Generation:** 1-2 minutes per rule
 - **Accuracy Rate:** 90%+ detection accuracy
+- **Coverage:** 95%+ MITRE ATT&CK technique coverage
 
 
 ## 🛠️ Troubleshooting
 
 ### Common Issues
 
-**1. Cairo Library Error :**
+**1. Cairo Library Error (Windows + Anaconda):**
 
 ❌ **Problem:**
 ```bash
@@ -241,7 +282,7 @@ cannot load library 'libcairo-2.dll': error 0x7e
 
 This error occurs when `cairosvg` cannot find the Cairo library, which is needed for SVG processing.
 
-✅ **Solution :**
+✅ **Solution (Windows + Anaconda):**
 
 ```bash
 # Step 0: Navigate to project root
@@ -279,10 +320,26 @@ taskkill /PID <PID> /F  # Windows
 ```
 
 **3. Frontend not connecting to backend:**
+
+**For Docker Setup:**
+- Ensure both containers are running: `docker-compose ps`
+- Check backend logs: `docker-compose logs backend`
+- Backend should be accessible at `http://localhost:5000` (local) or `http://YOUR_SERVER_IP:5000` (remote)
+- CORS is automatically configured for both localhost and remote access
+- Try accessing backend health endpoint: `curl http://localhost:5000/api/health`
+
+**For Manual Setup:**
 - Ensure backend is running on `http://localhost:5000`
 - Check CORS settings in `api/app.py`
 - Verify API endpoints are accessible
 - Make sure both frontend and backend are running
+- If using remote server, update `REACT_APP_API_URL` environment variable
+
+**For Remote/SSH Server:**
+- Verify firewall allows ports 3000 and 5000
+- Test backend connectivity: `curl http://YOUR_SERVER_IP:5000/api/health`
+- Check if frontend can reach backend from browser console
+- Ensure CORS configuration includes your server's IP/hostname
 
 **4. OpenAI API errors:**
 ```bash
@@ -318,6 +375,66 @@ rmdir /s /q node_modules && del package-lock.json  # Windows
 npm install
 ```
 
+**7. Docker remote access issues:**
+```bash
+# Check if containers are running
+docker-compose ps
+
+# Test if ports are accessible from outside
+# On the server:
+curl http://localhost:3000
+curl http://localhost:5000/api/health
+
+# From your local machine (replace SERVER_IP):
+curl http://SERVER_IP:3000
+curl http://SERVER_IP:5000/api/health
+
+# Check Docker logs for errors
+docker-compose logs -f
+
+# Restart containers if needed
+docker-compose restart
+```
+
+**For firewall/network issues:**
+```bash
+# Linux: Allow ports through firewall
+sudo ufw allow 3000
+sudo ufw allow 5000
+
+# Check if ports are listening
+netstat -tulpn | grep -E '3000|5000'  # Linux
+lsof -i :3000 -i :5000  # Mac
+```
+
+## 🏗️ Project Structure
+
+```
+PERSEPTOR/
+├── api/                    # Flask backend API
+│   ├── app.py             # Main API application
+│   └── requirements.txt   # API dependencies
+├── modules/               # Core Python modules
+│   ├── gpt_module.py      # AI integration
+│   ├── sigma_module.py    # Sigma rule generation
+│   ├── yara_module.py     # YARA rule generation
+│   ├── ocr_module.py      # OCR processing
+│   ├── qa_module.py       # Quality assurance
+│   └── ...               # Other modules
+├── perseptor-ui/          # React frontend
+│   ├── src/              # Source code
+│   ├── public/           # Static files
+│   └── package.json      # Frontend dependencies
+├── main.py               # Legacy main application
+├── app.py                # Alternative entry point
+├── requirements.txt      # Python dependencies
+└── README.md            # This file
+```
+
+## 🤝 Contributing
+
+Welcome contributions to PERSEPTOR! Here's how you can help:
+
 ### 🐛 Bug Reports
 - Use GitHub Issues
 - Include detailed reproduction steps
@@ -327,12 +444,6 @@ npm install
 - Describe the use case
 - Explain the expected behavior
 - Consider implementation complexity
-
-### 🔧 Code Contributions
-- Fork the repository
-- Create feature branches
-- Submit pull requests
-- Follow coding standards
 
 ### 📚 Documentation
 - Improve existing documentation
