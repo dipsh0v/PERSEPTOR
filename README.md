@@ -127,9 +127,6 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install Python dependencies
 pip install -r requirements.txt
-
-# Set your OpenAI API key
-export OPENAI_API_KEY="your-openai-api-key-here"
 ```
 
 #### Step 3: Frontend Setup (React/TypeScript)
