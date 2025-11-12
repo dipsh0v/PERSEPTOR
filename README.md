@@ -413,17 +413,10 @@ Welcome contributions to PERSEPTOR! Here's how you can help:
 - Include detailed reproduction steps
 - Provide system information
 
-### 💡 Feature Requests
-- Describe the use case
-- Explain the expected behavior
-- Consider implementation complexity
-
 ### 📚 Documentation
 - Improve existing documentation
 - Add examples and tutorials
 - Translate to other languages
-
-## 📞 Support
 
 ### 🆘 Getting Help
 - **Issues:** [GitHub Issues](https://github.com/dipsh0v/PERSEPTOR/issues)
