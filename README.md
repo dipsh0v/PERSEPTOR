@@ -1,443 +1,351 @@
-# PERSEPTOR - AI-Powered Detection Engineering Platform
+<!-- Banner / Logo Placeholder -->
 
-[![AI-Powered](https://img.shields.io/badge/AI-Powered-green)](https://openai.com/)
-[![Detection Engineering](https://img.shields.io/badge/Detection-Engineering-orange)](https://attack.mitre.org/)
-[![Python](https://img.shields.io/badge/Python-3.8+-blue)](https://python.org/)
-[![React](https://img.shields.io/badge/React-18+-blue)](https://reactjs.org/)
+<p align="center">
+  <img src="[IMAGE: PERSEPTOR banner / logo]" alt="PERSEPTOR" width="780"/>
+</p>
 
-**PERSEPTOR** is an advanced AI-driven detection engineering platform that revolutionizes threat intelligence through automated analysis, detection rule generation, and intelligent security orchestration.
+<h1 align="center">PERSEPTOR 🎯</h1>
 
-## 🚀 Key Features
+<p align="center"><b>AI‑Powered Detection Engineering Platform</b></p>
+<p align="center">Turn raw threat intelligence into production‑ready detections in minutes — with human‑in‑the‑loop QA.</p>
 
-### 🧠 AI-Powered Threat Analysis
-- **Automated URL Analysis:** Extract intelligence from threat reports
-- **OCR Processing:** Analyze images and documents
-- **Intelligent Summarization:** AI-generated threat summaries
-- **Real-time Processing:** Fast, efficient analysis
+<p align="center">
+  <a href="#quick-start"><img alt="docker" src="https://img.shields.io/badge/run%20with-docker-blue"></a>
+  <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/License-Apache--2.0-green"></a>
+  <img alt="status" src="https://img.shields.io/badge/status-active-success">
+  <img alt="stars" src="https://img.shields.io/github/stars/dipsh0v/PERSEPTOR?style=social">
+  <img alt="issues" src="https://img.shields.io/github/issues/dipsh0v/PERSEPTOR">
+  <img alt="prs" src="https://img.shields.io/github/issues-pr/dipsh0v/PERSEPTOR">
+</p>
 
-### 🔍 Detection Rule Generation
-- **Sigma Rules:** Comprehensive YAML-based detection rules
-- **YARA Rules:** Pattern-based malware detection signatures
-- **SIEM Queries:** Splunk, QRadar, and Elastic queries
-- **Quality Assurance:** Automated validation and scoring
+<p align="center">
+  <a href="#overview"><b>Overview</b></a> ·
+  <a href="#key-features"><b>Features</b></a> ·
+  <a href="#quick-start"><b>Quick Start</b></a> ·
+  <a href="#architecture"><b>Architecture</b></a> ·
+  <a href="#docs"><b>Docs</b></a> ·
+  <a href="#roadmap"><b>Roadmap</b></a> ·
+  <a href="#community"><b>Community</b></a>
+</p>
 
-### 🎯 Intelligence Extraction
-- **IoCs:** IPs, domains, URLs, file hashes, registry keys
-- **TTPs:** MITRE ATT&CK technique mapping
-- **Threat Actors:** Attribution and profiling
-- **Tools & Malware:** Identification and classification
-
-### 🔬 Advanced Capabilities
-- **Global Sigma Matching:** Cross-reference with existing rule repositories
-- **Confidence Scoring:** AI-powered rule quality assessment
-- **Multi-format Output:** Support for various SIEM platforms
-- **Interactive Web Interface:** User-friendly dashboard
-
-## 🏗️ Architecture
-
-```
-PERSEPTOR Platform
-├── 🎨 Frontend (React/TypeScript)
-│   ├── Dashboard Interface
-│   ├── Real-time Analytics
-│   └── Interactive Visualizations
-├── 🧠 AI Engine
-│   ├── GPT-4 Integration
-│   ├── Threat Analysis
-│   └── Rule Generation
-├── 🔧 Backend Services
-│   ├── Flask API
-│   ├── Processing Pipeline
-│   └── Data Management
-└── 📊 Analytics
-    ├── Performance Metrics
-    ├── Quality Scoring
-    └── Validation Framework
-```
-
-## 📋 Prerequisites
-
-### For Docker Setup (Recommended):
-- **Docker** (20.10+)
-- **Docker Compose** (1.29+)
-- **OpenAI API Key** (for AI features)
-- **Git** (for cloning the repository)
-
-### For Manual Setup:
-- **Python 3.8+** installed
-- **Node.js 16+** installed
-- **OpenAI API Key** (for AI features)
-- **Git** (for cloning the repository)
-
-## 📦 Installation
-
-### 🐳 Quick Start with Docker (Recommended)
-
-The fastest way to get PERSEPTOR running is with Docker:
-
-```bash
-# Clone the repository
-git clone https://github.com/dipsh0v/PERSEPTOR.git
-cd PERSEPTOR
-
-# Start with Docker Compose
-cd docker
-docker-compose up -d
-```
-
-**That's it!** Access the application at:
-
-**For Local Development:**
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:5000
-
-**For Remote/SSH Server:**
-- **Frontend:** http://YOUR_SERVER_IP:3000
-- **Backend API:** http://YOUR_SERVER_IP:5000
-- Replace `YOUR_SERVER_IP` with your server's IP address or hostname (e.g., 192.168.1.100, or Tailscale hostname)
-
-For detailed Docker setup instructions, see [Docker Documentation](docker/README.md)
-
-**📝 Important Notes for Remote/SSH Server Deployment:**
-- Ensure ports 3000 (frontend) and 5000 (backend) are accessible
-- For cloud providers, configure security groups/firewall rules
-- For VPN/Tailscale setups, the application works seamlessly with your network
-- CORS is pre-configured to work with both local and remote access
-- No additional configuration needed - just access via your server's IP or hostname
+<p align="center">
+  <a href="#quick-start"><b>🚀 Try in 60 seconds</b></a> ·
+  <a href="https://github.com/dipsh0v/PERSEPTOR/stargazers"><b>⭐ Star to support</b></a>
+</p>
 
 ---
 
-### 💻 Manual Installation
+## Overview
 
-If you prefer manual setup without Docker:
+**PERSEPTOR** transforms real‑world threat intel into **ATT&CK‑mapped** detections you can deploy. It automates behavioral extraction, Sigma/YARA generation, SIEM query conversion, and rule QA — then keeps humans in the loop for tuning and validation.
 
-#### Step 1: Clone the Repository
+**Built for** SOC, Detection Engineering, Threat Intel, and IR teams who want repeatable pipelines over ad‑hoc heroics.
 
-```bash
-git clone https://github.com/dipsh0v/PERSEPTOR.git
-cd PERSEPTOR
-```
+**What it solves**
 
-#### Step 2: Backend Setup (Python/Flask)
+* Threat reports are unstructured and slow to convert into signals.
+* Rules ship without QA or context, causing false positives.
+* Coverage is hard to measure and communicate.
 
-```bash
-# Create virtual environment (recommended)
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+**How it helps**
 
-# Install Python dependencies
-pip install -r requirements.txt
-```
+* AI‑assisted analysis → consistent patterns & IoCs
+* One‑click rule generation (Sigma/YARA) + SIEM queries
+* Confidence scoring, test cases, and validation workflows
 
-#### Step 3: Frontend Setup (React/TypeScript)
+> *“From intel to instrumented detection — fast, explainable, and production‑ready.”*
 
-```bash
-# Navigate to frontend directory
-cd perseptor-ui
+---
 
-# Install Node.js dependencies
-npm install
-```
+## ✨ Key Features {#key-features}
 
-#### Step 4: Run the Application
+### 🤖 AI‑Powered Analysis
 
-**Terminal 1 - Start Backend:**
-```bash
-cd "/path/to/PERSEPTOR"
-source venv/bin/activate  # If using virtual environment
-python3 api/app.py
-```
+* Extract **TTPs**, **IoCs**, and behaviors from reports, blogs, and PDFs (OCR included)
+* Normalize to **MITRE ATT&CK** tactics/techniques
+* Summarize & stage **investigation notes**
 
-**Terminal 2 - Start Frontend:**
-```bash
-cd "/path/to/PERSEPTOR/perseptor-ui"
-npm start
-```
+### 🛡️ Detection Engineering
 
-**Access the Application:**
-- **Local:** Open your browser and go to: `http://localhost:3000`
-- **Remote Server:** Access via: `http://YOUR_SERVER_IP:3000` (replace with your server's IP)
-- Backend API runs on port 5000 (use same hostname/IP as frontend)
+* Generate **Sigma** and **YARA** with rationale & test cases
+* Convert to **SIEM queries** (Splunk, Elastic, Sentinel, QRadar)
+* Rule **QA**: confidence score, explainers, common FP patterns
 
-## 🎮 Usage
+### 🔍 Threat Intelligence
 
-### Web Interface
+* Enrich entities (domains, hashes, IPs, tools)
+* De‑duplicate & tag context (family, cluster, campaign)
+* Planned: analyst feedback → **FP reduction via ML**
 
-1. **Start the application** using the installation steps above
-2. **Open your browser** and navigate to:
-   - Local: `http://localhost:3000`
-   - Remote/SSH Server: `http://YOUR_SERVER_IP:3000` (replace with your server's IP or hostname)
-3. **Enter your OpenAI API key** in the settings
-4. **Paste a threat report URL** to analyze
-5. **View the results** including:
-   - Threat summary
-   - Extracted IoCs
-   - Generated Sigma rules
-   - YARA rules
-   - MITRE ATT&CK mappings
+### 📊 Analytics & Reporting
 
-### API Usage
+* Auto‑built **report** with sources, ATT&CK mapping, and artifacts
+* Export artifacts (planned: PDF/HTML)
+* “Analyzed Reports” history & re‑run capability
 
-```python
-import requests
+### 🧩 Integrations (initial)
 
-# Set your API base URL
-# For local: http://localhost:5000
-# For remote server: http://YOUR_SERVER_IP:5000
-API_BASE_URL = 'http://localhost:5000'
+* **OCR** for images/figures embedded in reports
+* Local file & URL ingestion
+* Dockerized services for easy deployment
 
-# Analyze a threat report
-response = requests.post(f'{API_BASE_URL}/api/analyze', json={
-    'url': 'https://example.com/threat-report',
-    'openai_api_key': 'your-api-key'
-})
+---
 
-result = response.json()
-print(result['threat_summary'])
-```
+## 🎬 Quick Start {#quick-start}
 
-### Command Line Usage
-
-```python
-from modules.gpt_module import summarize_threat_report, extract_iocs_ttps_gpt
-
-# Analyze a threat report URL
-summary = summarize_threat_report(
-    text="Your threat report content here",
-    openai_api_key="your-api-key"
-)
-
-iocs_ttps = extract_iocs_ttps_gpt(
-    text="Your threat report content here",
-    openai_api_key="your-api-key"
-)
-
-print(summary)
-print(iocs_ttps)
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file in the root directory:
+> **Goal:** up and running in ~60 seconds with Docker.
 
 ```bash
-# OpenAI Configuration
-OPENAI_API_KEY=your-openai-api-key-here
+# 1) Clone
+git clone https://github.com/dipsh0v/PERSEPTOR.git && cd PERSEPTOR
 
-# Flask Configuration
-FLASK_ENV=development
-FLASK_DEBUG=True
-FLASK_PORT=5000
+# 2) Configure (minimal)
+cp .env.example .env
+# Edit .env with your OpenAI key (see SECURITY notes).
+# UI also supports entering a key at runtime.
 
-# Frontend Configuration (for Manual Setup)
-# For local development:
-REACT_APP_API_URL=http://localhost:5000
+# 3) Launch
+docker compose up -d --build
 
-# For remote/SSH server deployment:
-# REACT_APP_API_URL=http://YOUR_SERVER_IP:5000
-# Replace YOUR_SERVER_IP with your actual server IP or hostname
+# 4) Open UI
+# Default: http://localhost:3000
 ```
 
-**Note for Docker Users:**
-- Docker setup automatically handles API URL configuration
-- Frontend dynamically detects the backend URL based on your access method
-- No manual configuration needed for API endpoints
+**Success indicator:** Frontend responds on `:3000`, API on `:5000`. Run a sample analysis from the UI (paste a public threat report URL) and generate a Sigma rule.
 
-### AI Model Settings
+<details>
+<summary>Manual / Dev Setup (advanced)</summary>
 
-Edit `modules/gpt_module.py` to customize AI behavior:
+* **Backend (Flask/Gunicorn)**
 
-```python
-# Model configuration
-MODEL_NAME = "gpt-4.1-2025-04-14"
-TEMPERATURE = 0.1
-REASONING_EFFORT = "high"
+  ```bash
+  cd api && python3 -m venv venv && source venv/bin/activate
+  pip install -r requirements.txt
+  export OPENAI_API_KEY=sk-...  # or set via .env
+  gunicorn -b 0.0.0.0:5000 -w 1 app:app
+  ```
+* **Frontend (React)**
+
+  ```bash
+  cd perseptor-ui
+  npm install
+  npm run dev  # http://localhost:3000
+  ```
+
+</details>
+
+---
+
+## 📸 Screenshots / Demo
+
+* [IMAGE: Dashboard — URL/file analysis → patterns/IoCs]
+* [IMAGE: Generated Sigma with confidence & test cases]
+* [IMAGE: ATT&CK mapping view]
+* [IMAGE: Report summary card]
+
+> *Video demo placeholder*: `[VIDEO: 90s overview]`
+
+---
+
+## 🏗️ Architecture {#architecture}
+
+```mermaid
+graph TD
+  A[Input
+  • URL / PDF / HTML
+  • Files / Images (OCR)
+  ] --> B[Ingestion & Parsing]
+  B --> C[AI Analysis
+  • TTP/IoC extraction
+  • ATT&CK mapping]
+  C --> D[Detection Engine
+  • Sigma / YARA
+  • SIEM queries]
+  D --> E[QA & Scoring
+  • Confidence
+  • Test cases]
+  E --> F[Report Builder
+  • Summary
+  • Artifacts]
+  F --> G[(Store)]
+  G --> H[UI: History & Export]
 ```
 
-## 📈 Performance Metrics
+**Tech Stack**: GPT‑4, Python/Flask, React, Docker, Tesseract OCR
 
-### Platform Performance
-- **Analysis Speed:** 4-5 minutes per threat report
-- **Rule Generation:** 1-2 minutes per rule
-- **Accuracy Rate:** 90%+ detection accuracy
-- **Coverage:** 95%+ MITRE ATT&CK technique coverage
+---
 
+## 📚 Documentation {#docs}
 
-## 🛠️ Troubleshooting
+### Installation
 
-### Common Issues
+* **Prerequisites**: Docker ≥ 24, Docker Compose, Node 18+, Python 3.11+
+* **Config**: `.env` (see `.env.example`) or UI‑provided API key
+* **Security**: Prefer using a **project‑scoped** API key; avoid committing keys
 
-**1. Cairo Library Error (Windows + Anaconda):**
+### Configuration
 
-❌ **Problem:**
-```bash
-OSError: no library called "cairo-2" was found
-cannot load library 'libcairo-2.dll': error 0x7e
+| Variable         | Description                                    |
+| ---------------- | ---------------------------------------------- |
+| `OPENAI_API_KEY` | OpenAI API key (sk‑… or project key)           |
+| `API_PORT`       | Backend port (default `5000`)                  |
+| `UI_PORT`        | Frontend port (default `3000`)                 |
+| `ALLOW_UI_KEYS`  | Allow setting API key from UI (default `true`) |
+
+### Usage — Basic Workflow
+
+1. Provide a threat report URL or upload a file.
+2. PERSEPTOR extracts TTPs/IoCs and suggests ATT&CK mapping.
+3. Generate **Sigma/YARA** + SIEM queries.
+4. Review confidence, test cases, and potential FP notes.
+5. Save/report; iterate with edits.
+
+### API Reference (Preview)
+
+```http
+POST /api/analyze
+POST /api/generate_rule
+GET  /api/reports
 ```
 
-This error occurs when `cairosvg` cannot find the Cairo library, which is needed for SVG processing.
+> Full OpenAPI spec coming soon.
 
-✅ **Solution (Windows + Anaconda):**
+---
 
-```bash
-# Step 0: Navigate to project root
-cd /path/to/PERSEPTOR-main
+## 🎯 Use Cases
 
-# Step 1: Create a new isolated conda environment
-conda create -n perseptor python=3.10 -y
-conda activate perseptor
+**SOC Operations**
 
-# Step 2: Install Cairo and its dependencies (includes DLL files)
-conda install -c conda-forge cairo pango gdk-pixbuf libxml2 libxslt zlib -y
-conda install -c conda-forge cairosvg cairocffi -y
+* Rapid rule prototyping for emerging threats
+* Confidence‑scored detections for triage
 
-# Step 3: Install project dependencies
-pip install -r requirements.txt
+**Threat Intelligence**
 
-# Step 4: Run the backend
-python api/app.py
-```
+* Normalized, actionable outputs from narrative intel
+* Batch processing of long‑form reports
 
-**Why this works:**
-- `conda-forge` provides pre-compiled Cairo DLL files for Windows
-- Creates an isolated environment to avoid conflicts
-- Installs all required system libraries automatically
+**Incident Response**
 
-**2. Backend not starting:**
-```bash
-# Check if port 5000 is available
-lsof -i :5000  # Mac/Linux
-netstat -ano | findstr :5000  # Windows
+* Quick hypothesis → rule generation for scoping
+* Report bundles for stakeholders
 
-# Kill process if needed
-kill -9 <PID>  # Mac/Linux
-taskkill /PID <PID> /F  # Windows
-```
+**Red / Purple Team**
 
-**3. Frontend not connecting to backend:**
+* Procedure → detection linkage to drive exercises
+* ATT&CK‑mapped coverage tracking (planned)
 
-**For Docker Setup:**
-- Ensure both containers are running: `docker-compose ps`
-- Check backend logs: `docker-compose logs backend`
-- Backend should be accessible at `http://localhost:5000` (local) or `http://YOUR_SERVER_IP:5000` (remote)
-- CORS is automatically configured for both localhost and remote access
-- Try accessing backend health endpoint: `curl http://localhost:5000/api/health`
+---
 
-**For Manual Setup:**
-- Ensure backend is running on `http://localhost:5000`
-- Check CORS settings in `api/app.py`
-- Verify API endpoints are accessible
-- Make sure both frontend and backend are running
-- If using remote server, update `REACT_APP_API_URL` environment variable
+## 🚀 Performance & Benchmarks *(initial)*
 
-**For Remote/SSH Server:**
-- Verify firewall allows ports 3000 and 5000
-- Test backend connectivity: `curl http://YOUR_SERVER_IP:5000/api/health`
-- Check if frontend can reach backend from browser console
-- Ensure CORS configuration includes your server's IP/hostname
+* Typical single‑report analysis: *seconds to a few minutes* depending on inputs.
+* OCR adds overhead proportional to image count.
+* Rule QA returns a scalar **confidence score** with component breakdowns.
 
-**4. OpenAI API errors:**
-```bash
-# Verify API key is set (Mac/Linux)
-echo $OPENAI_API_KEY
+(Community contributions with reproducible benchmarks welcome.)
 
-# Verify API key is set (Windows)
-echo %OPENAI_API_KEY%
+---
 
-# Test API key
-curl -H "Authorization: Bearer $OPENAI_API_KEY" https://api.openai.com/v1/models
-```
+## 🗺️ Roadmap {#roadmap}
 
-**5. Module import errors:**
-```bash
-# Install missing dependencies
-pip install -r requirements.txt
+**Near‑term**
 
-# Check Python path
-python3 -c "import sys; print(sys.path)"
-```
+* PDF/HTML export of reports
+* “Mark as FP” on IoCs → learning loop
+* OpenAPI docs + SDK examples
 
-**6. Node.js/npm issues:**
-```bash
-# Clear npm cache
-npm cache clean --force
+**Mid‑term**
 
-# Delete node_modules and reinstall
-rm -rf node_modules package-lock.json  # Mac/Linux
-rmdir /s /q node_modules && del package-lock.json  # Windows
+* Coverage dashboard (SigmaHQ cross‑match)
+* Multi‑model provider support
+* Pluggable enrichment (VT, URLhaus, etc.)
 
-# Reinstall
-npm install
-```
+**Long‑term**
 
-**7. Docker remote access issues:**
-```bash
-# Check if containers are running
-docker-compose ps
+* Rule lifecycle management (promote, deprecate)
+* Team workspaces & RBAC
+* Data‑driven FP reduction models
 
-# Test if ports are accessible from outside
-# On the server:
-curl http://localhost:3000
-curl http://localhost:5000/api/health
+> Track progress in **Issues** and **Project Board**.
 
-# From your local machine (replace SERVER_IP):
-curl http://SERVER_IP:3000
-curl http://SERVER_IP:5000/api/health
-
-# Check Docker logs for errors
-docker-compose logs -f
-
-# Restart containers if needed
-docker-compose restart
-```
-
-**For firewall/network issues:**
-```bash
-# Linux: Allow ports through firewall
-sudo ufw allow 3000
-sudo ufw allow 5000
-
-# Check if ports are listening
-netstat -tulpn | grep -E '3000|5000'  # Linux
-lsof -i :3000 -i :5000  # Mac
-```
+---
 
 ## 🤝 Contributing
 
-Welcome contributions to PERSEPTOR! Here's how you can help:
+We welcome issues, PRs, and discussions. See:
 
-### 🐛 Bug Reports
-- Use GitHub Issues
-- Include detailed reproduction steps
-- Provide system information
+* `CONTRIBUTING.md` — how to file issues/PRs, coding standards
+* `CODE_OF_CONDUCT.md` — be kind
 
-### 📚 Documentation
-- Improve existing documentation
-- Add examples and tutorials
-- Translate to other languages
+**Ways to contribute**
 
-### 🆘 Getting Help
-- **Issues:** [GitHub Issues](https://github.com/dipsh0v/PERSEPTOR/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/dipsh0v/PERSEPTOR/discussions)
+* Bug reports & test cases
+* New parsers/enrichers
+* Additional SIEM mappings
+* Benchmarks & docs
 
-### 📧 Contact
-- **Developer:** Aytek AYTEMUR
-- **Email:** [aytek.aytemur@outlook.com](mailto:aytek.aytemur@outlook.com)
-- **GitHub:** [dipsh0v](https://github.com/dipsh0v)
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- **OpenAI** for providing powerful AI capabilities
-- **MITRE ATT&CK** for the comprehensive framework
-- **Sigma Community** for detection rule standards
-- **Security Community** for feedback and contributions
+> Contributors will be recognized in **ACKNOWLEDGMENTS**.
 
 ---
 
-**Ready to revolutionize detection engineering with AI? Start using PERSEPTOR today! 🚀**
+## 💬 Community & Support {#community}
+
+* GitHub **Issues** → bugs/feature requests
+* GitHub **Discussions** → ideas/roadmap
+* Security: see `SECURITY.md` for vulnerability reporting
+*
+
+> For organizations exploring collaboration, please open a discussion.
+
+---
+
+## 🏆 Acknowledgments
+
+* Open‑source projects that make this possible: Python, Flask, React, Tesseract, SigmaHQ, YARA
+* The detection engineering community for patterns, reviews, and feedback
+
+---
+
+## 📄 License & Citation
+
+This project is licensed under **Apache‑2.0** — see `LICENSE`.
+
+**Suggested citation**
+
+```
+Aytek Aytemur. PERSEPTOR: AI‑Powered Detection Engineering Platform. 2025. https://github.com/dipsh0v/PERSEPTOR
+```
+
+---
+
+## ⭐ Show Your Support
+
+If PERSEPTOR helps you ship better detections faster, please **star** the repo and share it with your team.
+
+<p align="center">
+  <a href="https://github.com/dipsh0v/PERSEPTOR/stargazers">⭐ Star on GitHub</a>
+</p>
+
+---
+
+### Quality Checklist (for maintainers)
+
+* [ ] First 5 seconds: value is clear
+* [ ] True "Quick Start" (copy‑paste)
+* [ ] Scannable sections & hierarchy
+* [ ] Practical depth without overload
+* [ ] Works for newcomers & experts
+* [ ] Clear CTAs
+* [ ] Copy‑paste‑ready examples
+* [ ] Easy navigation
+* [ ] Friendly community tone
+
+---
+
+### Notes for Maintainers (README hygiene)
+
+* Keep screenshots up‑to‑date with UI
+* Avoid leaking secrets in examples
+* Prefer relative links within repo
+* Ensure alt text on images
+* Keep Mermaid diagrams simple and current
