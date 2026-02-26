@@ -1055,8 +1055,8 @@ const Dashboard: React.FC = () => {
                                     >
                                       {test.test_name}
                                     </Typography>
-                                    <Chip label={test.mitre_technique} size="small" component="a"
-                                      href={test.real_world_reference?.mitre_url || `https://attack.mitre.org/techniques/${test.mitre_technique.replace('.', '/')}/`}
+                                    <Chip label={test.mitre_technique || 'N/A'} size="small" component="a"
+                                      href={test.real_world_reference?.mitre_url || `https://attack.mitre.org/techniques/${(test.mitre_technique || '').replace('.', '/')}/`}
                                       target="_blank" rel="noopener noreferrer" clickable
                                       sx={{
                                         fontFamily: CODE_FONT, fontWeight: 700, fontSize: '0.72rem', borderRadius: '6px',
@@ -1065,7 +1065,7 @@ const Dashboard: React.FC = () => {
                                         textDecoration: 'none',
                                       }}
                                     />
-                                    <Chip label={test.privilege_required} size="small" sx={{
+                                    <Chip label={test.privilege_required || 'user'} size="small" sx={{
                                       fontFamily: '"Inter", sans-serif', fontWeight: 700, fontSize: '0.68rem', borderRadius: '6px',
                                       textTransform: 'uppercase', letterSpacing: '0.05em',
                                       backgroundColor: alpha(privColor, 0.1), color: privColor,
