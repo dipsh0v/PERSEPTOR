@@ -44,8 +44,9 @@ class ReportRepository:
             conn.execute(
                 """INSERT INTO analysis_reports
                    (id, url, timestamp, threat_summary, analysis_data, yara_rules,
-                    generated_sigma_rules, siem_queries, sigma_matches, provider, model)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    generated_sigma_rules, siem_queries, sigma_matches,
+                    atomic_tests, mitre_mapping, provider, model)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     report_id,
                     report_data.get("url", ""),
@@ -56,6 +57,8 @@ class ReportRepository:
                     report_data.get("generated_sigma_rules", ""),
                     _serialize(report_data.get("siem_queries")),
                     _serialize(report_data.get("sigma_matches")),
+                    _serialize(report_data.get("atomic_tests")),
+                    _serialize(report_data.get("mitre_mapping")),
                     report_data.get("provider", "openai"),
                     report_data.get("model"),
                 ),
@@ -121,7 +124,7 @@ class ReportRepository:
 
     @staticmethod
     def _row_to_dict(row) -> Dict:
-        return {
+        result = {
             "id": row["id"],
             "url": row["url"],
             "timestamp": row["timestamp"],
@@ -134,6 +137,16 @@ class ReportRepository:
             "provider": row["provider"],
             "model": row["model"],
         }
+        # Added in schema v2 — handle older rows that may not have these columns
+        try:
+            result["atomic_tests"] = _deserialize(row["atomic_tests"])
+        except (IndexError, KeyError):
+            result["atomic_tests"] = []
+        try:
+            result["mitre_mapping"] = _deserialize(row["mitre_mapping"])
+        except (IndexError, KeyError):
+            result["mitre_mapping"] = {}
+        return result
 
 
 class RuleRepository:

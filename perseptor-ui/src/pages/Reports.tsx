@@ -273,14 +273,17 @@ const Reports: React.FC = () => {
                         <LinkIcon sx={{ fontSize: 20 }} />
                       </Box>
 
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="subtitle1" sx={{
-                          fontWeight: 700, color: theme.palette.primary.main,
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                          fontFamily: '"JetBrains Mono", monospace', fontSize: '0.85rem',
-                        }}>
-                          {report.url}
-                        </Typography>
+                      <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                        <Tooltip title={report.url} arrow placement="top">
+                          <Typography variant="subtitle1" sx={{
+                            fontWeight: 700, color: theme.palette.primary.main,
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            fontFamily: '"JetBrains Mono", monospace', fontSize: '0.85rem',
+                            maxWidth: '100%', display: 'block',
+                          }}>
+                            {report.url}
+                          </Typography>
+                        </Tooltip>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                           <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                           <Typography variant="caption" color="text.secondary">
@@ -424,22 +427,103 @@ const Reports: React.FC = () => {
                       </Box>
                     )}
 
-                    {/* ── Generated Sigma Rules ── */}
-                    {report.generated_sigma_rules && (
-                      <Box sx={{ mb: 4 }}>
-                        <SectionHeader icon="sigma" label="Generated Sigma Rules" />
-                        <Accordion sx={innerAccordionSx}>
-                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>View Generated Sigma Rules</Typography>
-                          </AccordionSummary>
-                          <AccordionDetails>
-                            <Box component="pre" sx={codeBlockSx}>
-                              {report.generated_sigma_rules}
+                    {/* ── Generated Sigma Rules (split like Dashboard) ── */}
+                    {report.generated_sigma_rules && (() => {
+                      const allRules = report.generated_sigma_rules.split('---').filter((r: string) => r.trim());
+                      const aiRules = allRules.filter((r: string) => {
+                        const t = r.match(/title:\s*(.+)/);
+                        return !(t && t[1].trim().startsWith('PERSEPTOR - Suspicious'));
+                      });
+                      const iocRules = allRules.filter((r: string) => {
+                        const t = r.match(/title:\s*(.+)/);
+                        return t && t[1].trim().startsWith('PERSEPTOR - Suspicious');
+                      });
+
+                      return (
+                        <>
+                          {/* AI-Generated Sigma Rules */}
+                          {aiRules.length > 0 && (
+                            <Box sx={{ mb: 4 }}>
+                              <SectionHeader icon="sigma" label="AI-Generated Sigma Rules" />
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                {aiRules.map((rule: string, i: number) => {
+                                  const titleMatch = rule.match(/title:\s*(.+)/);
+                                  const levelMatch = rule.match(/level:\s*(.+)/);
+                                  const level = levelMatch ? levelMatch[1].trim() : '';
+                                  const levelColor = level === 'critical' ? theme.palette.error.main : level === 'high' ? '#f59e0b' : '#3b82f6';
+                                  return (
+                                    <Accordion key={i} sx={innerAccordionSx}>
+                                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                        <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                          <Typography variant="body2" sx={{
+                                            flex: '1 1 0', minWidth: 0, fontWeight: 700,
+                                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                          }}>
+                                            {titleMatch ? titleMatch[1].trim() : `Sigma Rule ${i + 1}`}
+                                          </Typography>
+                                          {level && (
+                                            <Chip label={level} size="small" sx={{
+                                              fontWeight: 700, fontSize: '0.6rem', borderRadius: '6px', height: 22,
+                                              textTransform: 'uppercase', letterSpacing: '0.05em',
+                                              backgroundColor: alpha(levelColor, 0.1), color: levelColor,
+                                              border: `1px solid ${alpha(levelColor, 0.25)}`,
+                                            }} />
+                                          )}
+                                        </Box>
+                                      </AccordionSummary>
+                                      <AccordionDetails>
+                                        <Box component="pre" sx={codeBlockSx}>{rule.trim()}</Box>
+                                      </AccordionDetails>
+                                    </Accordion>
+                                  );
+                                })}
+                              </Box>
                             </Box>
-                          </AccordionDetails>
-                        </Accordion>
-                      </Box>
-                    )}
+                          )}
+
+                          {/* IoC-Based Sigma Rules */}
+                          {iocRules.length > 0 && (
+                            <Box sx={{ mb: 4 }}>
+                              <SectionHeader icon="sigma" label="IoC-Based Sigma Rules" />
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                {iocRules.map((rule: string, i: number) => {
+                                  const titleMatch = rule.match(/title:\s*(.+)/);
+                                  const levelMatch = rule.match(/level:\s*(.+)/);
+                                  const level = levelMatch ? levelMatch[1].trim() : '';
+                                  const levelColor = level === 'critical' ? theme.palette.error.main : level === 'high' ? '#f59e0b' : '#3b82f6';
+                                  return (
+                                    <Accordion key={i} sx={innerAccordionSx}>
+                                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                        <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                          <FingerprintIcon sx={{ fontSize: 16, color: theme.palette.primary.main, flexShrink: 0 }} />
+                                          <Typography variant="body2" sx={{
+                                            flex: '1 1 0', minWidth: 0, fontWeight: 700,
+                                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                          }}>
+                                            {titleMatch ? titleMatch[1].trim() : `IoC Rule ${i + 1}`}
+                                          </Typography>
+                                          {level && (
+                                            <Chip label={level} size="small" sx={{
+                                              fontWeight: 700, fontSize: '0.6rem', borderRadius: '6px', height: 22,
+                                              textTransform: 'uppercase', letterSpacing: '0.05em',
+                                              backgroundColor: alpha(levelColor, 0.1), color: levelColor,
+                                              border: `1px solid ${alpha(levelColor, 0.25)}`,
+                                            }} />
+                                          )}
+                                        </Box>
+                                      </AccordionSummary>
+                                      <AccordionDetails>
+                                        <Box component="pre" sx={codeBlockSx}>{rule.trim()}</Box>
+                                      </AccordionDetails>
+                                    </Accordion>
+                                  );
+                                })}
+                              </Box>
+                            </Box>
+                          )}
+                        </>
+                      );
+                    })()}
 
                     {/* ── Atomic Red Team Test Scenarios ── */}
                     {report.atomic_tests && report.atomic_tests.length > 0 && (
@@ -472,9 +556,9 @@ const Reports: React.FC = () => {
                                       {test.test_name}
                                     </Typography>
                                     <Chip
-                                      label={test.mitre_technique} size="small"
+                                      label={test.mitre_technique || 'N/A'} size="small"
                                       component="a"
-                                      href={test.real_world_reference?.mitre_url || `https://attack.mitre.org/techniques/${test.mitre_technique.replace('.', '/')}/`}
+                                      href={test.real_world_reference?.mitre_url || `https://attack.mitre.org/techniques/${(test.mitre_technique || '').replace('.', '/')}/`}
                                       target="_blank" rel="noopener noreferrer" clickable
                                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                                       sx={{
@@ -484,7 +568,7 @@ const Reports: React.FC = () => {
                                         border: `1px solid ${alpha('#8b5cf6', 0.25)}`, textDecoration: 'none',
                                       }}
                                     />
-                                    <Chip label={test.privilege_required} size="small" sx={{
+                                    <Chip label={test.privilege_required || 'user'} size="small" sx={{
                                       fontWeight: 700, fontSize: '0.6rem', borderRadius: '6px', height: 22,
                                       textTransform: 'uppercase', letterSpacing: '0.05em',
                                       backgroundColor: alpha(privColor, 0.1), color: privColor,
@@ -736,7 +820,7 @@ const Reports: React.FC = () => {
                                         )}
                                         {test.real_world_reference.atomic_red_team_id && (
                                           <Typography component="a"
-                                            href={`https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/${test.mitre_technique}/${test.mitre_technique}.md`}
+                                            href={`https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/${test.mitre_technique || ''}/${test.mitre_technique || ''}.md`}
                                             target="_blank" rel="noopener noreferrer" variant="caption" sx={{
                                               color: '#10b981', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.7rem',
                                               textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 0.5,

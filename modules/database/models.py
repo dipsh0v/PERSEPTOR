@@ -59,11 +59,23 @@ def init_db():
                 generated_sigma_rules TEXT,
                 siem_queries TEXT,
                 sigma_matches TEXT,
+                atomic_tests TEXT,
+                mitre_mapping TEXT,
                 provider TEXT DEFAULT 'openai',
                 model TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Migration: add atomic_tests and mitre_mapping columns if missing
+        try:
+            cursor.execute("ALTER TABLE analysis_reports ADD COLUMN atomic_tests TEXT")
+        except Exception:
+            pass  # Column already exists
+        try:
+            cursor.execute("ALTER TABLE analysis_reports ADD COLUMN mitre_mapping TEXT")
+        except Exception:
+            pass  # Column already exists
 
         # Generated Rules
         cursor.execute("""
