@@ -1,0 +1,119 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# API Keys and Secrets
+.env
+.env.local
+.env.production
+.env.staging
+*.key
+*.pem
+secrets.json
+config.json
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# React Build
+perseptor-ui/build/
+perseptor-ui/dist/
+
+# Reports and Outputs
+reports/
+*.pdf
+*.csv
+*.xlsx
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Reports and Analysis
+*.pdf
+*.csv
+*.xlsx
+analysis_reports/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Coverage Reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Debug artifacts
+api/logs/
+data/
+
+# Claude Code
+.claude/

@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: perseptor-backend
+    expose:
+      - "5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+      - DATABASE_PATH=/app/data/perseptor.db
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - SESSION_EXPIRY_HOURS=${SESSION_EXPIRY_HOURS:-24}
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-60}
+    volumes:
+      - ../modules:/app/modules
+      - ../api:/app/api
+      - ../Global_Sigma_Rules:/app/Global_Sigma_Rules:ro
+      - perseptor-data:/app/data
+    restart: unless-stopped
+    networks:
+      - perseptor-network
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: perseptor-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - perseptor-network
+
+volumes:
+  perseptor-data:
+    driver: local
+
+networks:
+  perseptor-network:
+    driver: bridge
+

@@ -1,0 +1,66 @@
+FROM python:3.11-slim
+
+# Install system dependencies for Playwright and OCR
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    curl \
+    libglib2.0-0 \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libxcb1 \
+    libxkbcommon0 \
+    libx11-6 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    libgl1-mesa-glx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Install Python dependencies
+RUN pip install --upgrade pip setuptools wheel
+
+# Install main requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install API requirements
+COPY api/requirements.txt ./api/requirements.txt
+RUN pip install --no-cache-dir -r api/requirements.txt
+
+# Install Playwright browsers
+RUN playwright install chromium
+
+# Copy application code
+COPY . .
+
+# Ensure Global_Sigma_Rules is present
+COPY Global_Sigma_Rules /app/Global_Sigma_Rules
+
+# Create data directory for SQLite database
+RUN mkdir -p /app/data && chmod 755 /app/data
+
+# Default environment variables
+ENV BACKEND_HOST=0.0.0.0
+ENV BACKEND_PORT=5000
+ENV DATABASE_PATH=/app/data/perseptor.db
+
+# Run Flask application
+WORKDIR /app/api
+CMD ["python", "app.py"]
+
+EXPOSE 5000
