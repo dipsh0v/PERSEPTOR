@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Typography, TextField, Button, Box, CircularProgress, Paper, Card, CardContent,
   Fade, Zoom, Divider, Chip, Accordion, AccordionSummary, AccordionDetails,
-  Alert, IconButton, Tooltip, useTheme,
+  Alert, IconButton, Tooltip, useTheme, Tabs, Tab,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -20,8 +20,16 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import TerminalIcon from '@mui/icons-material/Terminal';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import CloseIcon from '@mui/icons-material/Close';
 import { useAppDispatch, useAppSelector } from '../store';
-import { setUrl, analyzeUrlStream, clearError, cancelAnalysis } from '../store/slices/analysisSlice';
+import {
+  setUrl, setInputMode, setPdfFileName,
+  analyzeUrlStream, analyzePdfStream,
+  clearError, cancelAnalysis,
+} from '../store/slices/analysisSlice';
+import type { InputMode } from '../store/slices/analysisSlice';
 import AnalysisProgressOverlay from '../components/AnalysisProgressOverlay';
 import MitreNavigator from '../components/MitreNavigator';
 
@@ -37,6 +45,8 @@ const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
   const {
     url,
+    inputMode,
+    pdfFileName,
     loading,
     error,
     result: analysisResult,
@@ -49,6 +59,9 @@ const Dashboard: React.FC = () => {
   const { isConnected, apiKey } = useAppSelector((state) => state.settings);
   const [showAnimation, setShowAnimation] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const theme = useTheme();
 
   useEffect(() => {
@@ -89,6 +102,53 @@ const Dashboard: React.FC = () => {
     }
 
     dispatch(analyzeUrlStream(url));
+  };
+
+  const handlePdfSelect = useCallback((file: File) => {
+    if (file && file.type === 'application/pdf') {
+      setPdfFile(file);
+      dispatch(setPdfFileName(file.name));
+    }
+  }, [dispatch]);
+
+  const handlePdfClear = useCallback(() => {
+    setPdfFile(null);
+    dispatch(setPdfFileName(null));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [dispatch]);
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handlePdfSelect(file);
+  }, [handlePdfSelect]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handlePdfSelect(file);
+  }, [handlePdfSelect]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragOver(false);
+  }, []);
+
+  const handleSubmitPdf = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pdfFile) return;
+    if (!isConnected && !apiKey) return;
+    dispatch(analyzePdfStream(pdfFile));
+  };
+
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    dispatch(setInputMode(newValue === 0 ? 'url' : 'pdf'));
   };
 
   const handleCancel = () => {
@@ -396,111 +456,298 @@ const Dashboard: React.FC = () => {
                     background: `linear-gradient(135deg, ${alpha(PRIMARY, 0.15)}, ${alpha(SECONDARY, 0.1)})`,
                   }}
                 >
-                  <SearchIcon sx={{ color: PRIMARY, fontSize: 20 }} />
+                  <SecurityIcon sx={{ color: PRIMARY, fontSize: 20 }} />
                 </Box>
-                URL Analysis
+                Threat Analysis
               </Typography>
 
-              <Box
-                component="form"
-                onSubmit={handleSubmit}
+              <Tabs
+                value={inputMode === 'url' ? 0 : 1}
+                onChange={handleTabChange}
                 sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  gap: 2,
-                  mt: 2,
+                  mb: 2,
+                  minHeight: 40,
+                  '& .MuiTabs-indicator': {
+                    background: `linear-gradient(90deg, ${PRIMARY}, ${SECONDARY})`,
+                    height: 3,
+                    borderRadius: '3px 3px 0 0',
+                  },
+                  '& .MuiTab-root': {
+                    fontFamily: '"Inter", sans-serif',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    textTransform: 'none',
+                    minHeight: 40,
+                    color: alpha(theme.palette.text.primary, 0.5),
+                    '&.Mui-selected': { color: PRIMARY },
+                  },
                 }}
               >
-                <TextField
-                  fullWidth
-                  label="Enter URL"
-                  value={url}
-                  onChange={(e) => dispatch(setUrl(e.target.value))}
-                  error={!!error}
-                  helperText={error}
-                  placeholder="https://example.com/threat-report"
+                <Tab icon={<SearchIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="URL Analysis" />
+                <Tab icon={<PictureAsPdfIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="PDF Upload" />
+              </Tabs>
+
+              {/* ── URL Tab ── */}
+              {inputMode === 'url' && (
+                <Box
+                  component="form"
+                  onSubmit={handleSubmit}
                   sx={{
-                    flexGrow: 1,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                      fontFamily: '"Inter", sans-serif',
-                      transition: `all 0.3s ${EASING}`,
-                      '&.Mui-focused': {
-                        boxShadow: `0 0 0 3px ${alpha(PRIMARY, 0.15)}`,
-                      },
-                      '&:hover': {
-                        boxShadow: `0 0 0 2px ${alpha(PRIMARY, 0.08)}`,
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: '"Inter", sans-serif',
-                    },
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2,
                   }}
-                />
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={loading || (!isConnected && !apiKey)}
-                    startIcon={loading ? <CircularProgress size={20} sx={{ color: 'inherit' }} /> : <SearchIcon />}
+                >
+                  <TextField
+                    fullWidth
+                    label="Enter URL"
+                    value={url}
+                    onChange={(e) => dispatch(setUrl(e.target.value))}
+                    error={!!error}
+                    helperText={error}
+                    placeholder="https://example.com/threat-report"
                     sx={{
-                      minWidth: { xs: '100%', sm: '140px' },
-                      height: '56px',
-                      borderRadius: '12px',
-                      fontFamily: '"Inter", sans-serif',
-                      fontWeight: 700,
-                      fontSize: '0.95rem',
-                      letterSpacing: '0.02em',
-                      textTransform: 'none',
-                      background: `linear-gradient(135deg, ${PRIMARY}, ${alpha(SECONDARY, 0.85)})`,
-                      boxShadow: `0 4px 16px ${alpha(PRIMARY, 0.35)}`,
-                      transition: `all 0.35s ${EASING_BOUNCE}`,
-                      '&:hover': {
-                        transform: 'translateY(-2px) scale(1.02)',
-                        boxShadow: `0 8px 24px ${alpha(PRIMARY, 0.45)}`,
-                        background: `linear-gradient(135deg, ${PRIMARY}, ${SECONDARY})`,
+                      flexGrow: 1,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        fontFamily: '"Inter", sans-serif',
+                        transition: `all 0.3s ${EASING}`,
+                        '&.Mui-focused': {
+                          boxShadow: `0 0 0 3px ${alpha(PRIMARY, 0.15)}`,
+                        },
+                        '&:hover': {
+                          boxShadow: `0 0 0 2px ${alpha(PRIMARY, 0.08)}`,
+                        },
                       },
-                      '&:active': {
-                        transform: 'translateY(0) scale(0.98)',
-                      },
-                      '&.Mui-disabled': {
-                        background: alpha(PRIMARY, 0.25),
-                        color: alpha('#fff', 0.5),
+                      '& .MuiInputLabel-root': {
+                        fontFamily: '"Inter", sans-serif',
                       },
                     }}
-                  >
-                    {loading ? 'Analyzing...' : 'Analyze'}
-                  </Button>
-                  {loading && (
-                    <Tooltip title="Cancel analysis" arrow>
-                      <IconButton
-                        onClick={handleCancel}
+                  />
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={loading || (!isConnected && !apiKey)}
+                      startIcon={loading ? <CircularProgress size={20} sx={{ color: 'inherit' }} /> : <SearchIcon />}
+                      sx={{
+                        minWidth: { xs: '100%', sm: '140px' },
+                        height: '56px',
+                        borderRadius: '12px',
+                        fontFamily: '"Inter", sans-serif',
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        letterSpacing: '0.02em',
+                        textTransform: 'none',
+                        background: `linear-gradient(135deg, ${PRIMARY}, ${alpha(SECONDARY, 0.85)})`,
+                        boxShadow: `0 4px 16px ${alpha(PRIMARY, 0.35)}`,
+                        transition: `all 0.35s ${EASING_BOUNCE}`,
+                        '&:hover': {
+                          transform: 'translateY(-2px) scale(1.02)',
+                          boxShadow: `0 8px 24px ${alpha(PRIMARY, 0.45)}`,
+                          background: `linear-gradient(135deg, ${PRIMARY}, ${SECONDARY})`,
+                        },
+                        '&:active': {
+                          transform: 'translateY(0) scale(0.98)',
+                        },
+                        '&.Mui-disabled': {
+                          background: alpha(PRIMARY, 0.25),
+                          color: alpha('#fff', 0.5),
+                        },
+                      }}
+                    >
+                      {loading ? 'Analyzing...' : 'Analyze'}
+                    </Button>
+                    {loading && (
+                      <Tooltip title="Cancel analysis" arrow>
+                        <IconButton
+                          onClick={handleCancel}
+                          sx={{
+                            height: '56px',
+                            width: '56px',
+                            borderRadius: '12px',
+                            color: theme.palette.error.main,
+                            border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
+                            background: alpha(theme.palette.error.main, 0.06),
+                            transition: `all 0.3s ${EASING}`,
+                            animation: 'cancel-pulse 2s ease-in-out infinite',
+                            '@keyframes cancel-pulse': {
+                              '0%, 100%': { boxShadow: `0 0 0 0 ${alpha(theme.palette.error.main, 0.2)}` },
+                              '50%': { boxShadow: `0 0 16px 4px ${alpha(theme.palette.error.main, 0.15)}` },
+                            },
+                            '&:hover': {
+                              backgroundColor: alpha(theme.palette.error.main, 0.12),
+                              boxShadow: `0 0 20px ${alpha(theme.palette.error.main, 0.3)}`,
+                              transform: 'scale(1.05)',
+                            },
+                          }}
+                        >
+                          <CancelIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Box>
+                </Box>
+              )}
+
+              {/* ── PDF Tab ── */}
+              {inputMode === 'pdf' && (
+                <Box component="form" onSubmit={handleSubmitPdf}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf"
+                    style={{ display: 'none' }}
+                    onChange={handleFileInputChange}
+                  />
+
+                  {!pdfFile ? (
+                    <Box
+                      onClick={() => fileInputRef.current?.click()}
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      sx={{
+                        border: `2px dashed ${isDragOver ? PRIMARY : alpha(theme.palette.divider, 0.4)}`,
+                        borderRadius: '12px',
+                        p: 4,
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: `all 0.3s ${EASING}`,
+                        background: isDragOver
+                          ? alpha(PRIMARY, 0.06)
+                          : alpha(theme.palette.background.default, 0.3),
+                        '&:hover': {
+                          borderColor: PRIMARY,
+                          background: alpha(PRIMARY, 0.04),
+                        },
+                      }}
+                    >
+                      <CloudUploadIcon sx={{ fontSize: 48, color: alpha(PRIMARY, 0.6), mb: 1 }} />
+                      <Typography
                         sx={{
-                          height: '56px',
-                          width: '56px',
-                          borderRadius: '12px',
-                          color: theme.palette.error.main,
-                          border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
-                          background: alpha(theme.palette.error.main, 0.06),
-                          transition: `all 0.3s ${EASING}`,
-                          animation: 'cancel-pulse 2s ease-in-out infinite',
-                          '@keyframes cancel-pulse': {
-                            '0%, 100%': { boxShadow: `0 0 0 0 ${alpha(theme.palette.error.main, 0.2)}` },
-                            '50%': { boxShadow: `0 0 16px 4px ${alpha(theme.palette.error.main, 0.15)}` },
-                          },
-                          '&:hover': {
-                            backgroundColor: alpha(theme.palette.error.main, 0.12),
-                            boxShadow: `0 0 20px ${alpha(theme.palette.error.main, 0.3)}`,
-                            transform: 'scale(1.05)',
-                          },
+                          fontFamily: '"Inter", sans-serif',
+                          fontWeight: 600,
+                          fontSize: '0.95rem',
+                          color: alpha(theme.palette.text.primary, 0.7),
                         }}
                       >
-                        <CancelIcon />
-                      </IconButton>
-                    </Tooltip>
+                        Drop your PDF here or click to browse
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontFamily: '"Inter", sans-serif',
+                          fontSize: '0.8rem',
+                          color: alpha(theme.palette.text.primary, 0.4),
+                          mt: 0.5,
+                        }}
+                      >
+                        Maximum file size: 20MB
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        p: 2,
+                        borderRadius: '12px',
+                        border: `1px solid ${alpha(PRIMARY, 0.3)}`,
+                        background: alpha(PRIMARY, 0.04),
+                      }}
+                    >
+                      <PictureAsPdfIcon sx={{ fontSize: 36, color: '#ef4444' }} />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          sx={{
+                            fontFamily: '"Inter", sans-serif',
+                            fontWeight: 600,
+                            fontSize: '0.9rem',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {pdfFile.name}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontFamily: '"Inter", sans-serif',
+                            fontSize: '0.75rem',
+                            color: alpha(theme.palette.text.primary, 0.5),
+                          }}
+                        >
+                          {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+                        </Typography>
+                      </Box>
+                      <Tooltip title="Remove file" arrow>
+                        <IconButton size="small" onClick={handlePdfClear}>
+                          <CloseIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   )}
+
+                  {error && (
+                    <Alert severity="error" sx={{ mt: 1, borderRadius: '8px' }}>
+                      {error}
+                    </Alert>
+                  )}
+
+                  <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={loading || !pdfFile || (!isConnected && !apiKey)}
+                      startIcon={loading ? <CircularProgress size={20} sx={{ color: 'inherit' }} /> : <SearchIcon />}
+                      sx={{
+                        minWidth: '140px',
+                        height: '48px',
+                        borderRadius: '12px',
+                        fontFamily: '"Inter", sans-serif',
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        textTransform: 'none',
+                        background: `linear-gradient(135deg, ${PRIMARY}, ${alpha(SECONDARY, 0.85)})`,
+                        boxShadow: `0 4px 16px ${alpha(PRIMARY, 0.35)}`,
+                        transition: `all 0.35s ${EASING_BOUNCE}`,
+                        '&:hover': {
+                          transform: 'translateY(-2px) scale(1.02)',
+                          boxShadow: `0 8px 24px ${alpha(PRIMARY, 0.45)}`,
+                          background: `linear-gradient(135deg, ${PRIMARY}, ${SECONDARY})`,
+                        },
+                        '&.Mui-disabled': {
+                          background: alpha(PRIMARY, 0.25),
+                          color: alpha('#fff', 0.5),
+                        },
+                      }}
+                    >
+                      {loading ? 'Analyzing...' : 'Analyze PDF'}
+                    </Button>
+                    {loading && (
+                      <Tooltip title="Cancel analysis" arrow>
+                        <IconButton
+                          onClick={handleCancel}
+                          sx={{
+                            height: '48px',
+                            width: '48px',
+                            borderRadius: '12px',
+                            color: theme.palette.error.main,
+                            border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
+                            background: alpha(theme.palette.error.main, 0.06),
+                            '&:hover': {
+                              backgroundColor: alpha(theme.palette.error.main, 0.12),
+                            },
+                          }}
+                        >
+                          <CancelIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Box>
                 </Box>
-              </Box>
+              )}
             </Paper>
           </Zoom>
 

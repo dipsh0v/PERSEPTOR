@@ -1,7 +1,7 @@
 /**
  * PERSEPTOR v2.0 - Analysis Slice
  * Manages threat analysis state with SSE streaming support.
- * Uses EventSource for real-time progress from /api/analyze/stream.
+ * Supports both URL analysis and local PDF file upload.
  */
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
@@ -11,8 +11,12 @@ import type { SSEEvent } from '../../components/AnalysisProgressOverlay';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
+export type InputMode = 'url' | 'pdf';
+
 export interface AnalysisState {
   url: string;
+  inputMode: InputMode;
+  pdfFileName: string | null;
   loading: boolean;
   error: string | null;
   result: AnalysisResult | null;
@@ -33,6 +37,8 @@ export interface AnalysisState {
 
 const initialState: AnalysisState = {
   url: '',
+  inputMode: 'url',
+  pdfFileName: null,
   loading: false,
   error: null,
   result: null,
@@ -44,18 +50,92 @@ const initialState: AnalysisState = {
   history: [],
 };
 
-// ─── SSE Streaming Thunk ────────────────────────────────────────────────────
+// ─── SSE Stream Reader (shared) ─────────────────────────────────────────────
 
-// We use a custom thunk that opens an EventSource-like connection via fetch
-// (since EventSource doesn't support POST). This reads the SSE stream
-// and dispatches stage updates in real-time.
+async function readSSEStream(
+  response: Response,
+  dispatch: any,
+  signal: AbortSignal,
+): Promise<AnalysisResult> {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error('ReadableStream not supported');
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalResult: AnalysisResult | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const eventData: SSEEvent = JSON.parse(line.slice(6));
+          dispatch(sseEventReceived(eventData));
+
+          if (eventData.stage === 'complete' && eventData.data) {
+            finalResult = eventData.data as AnalysisResult;
+          }
+
+          if (eventData.stage === 'error') {
+            throw new Error(eventData.message);
+          }
+        } catch (parseErr: any) {
+          if (parseErr.message && !parseErr.message.includes('JSON')) {
+            throw parseErr;
+          }
+          console.warn('SSE parse warning:', parseErr);
+        }
+      }
+    }
+  }
+
+  if (finalResult) {
+    return finalResult;
+  }
+
+  throw new Error('Stream ended without complete result');
+}
+
+// ─── Helper: get session headers ────────────────────────────────────────────
+
+function getSessionHeaders(state: RootState): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const { sessionToken } = state.settings;
+
+  if (sessionToken) {
+    headers['X-Session-Token'] = sessionToken;
+  }
+
+  // Also inject from localStorage as fallback
+  try {
+    const stored = localStorage.getItem('perseptor_settings');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.sessionToken && !headers['X-Session-Token']) {
+        headers['X-Session-Token'] = parsed.sessionToken;
+      }
+    }
+  } catch {}
+
+  return headers;
+}
+
+// ─── SSE Streaming Thunks ───────────────────────────────────────────────────
 
 let abortController: AbortController | null = null;
 
 export const analyzeUrlStream = createAsyncThunk(
   'analysis/analyzeUrlStream',
   async (url: string, { getState, dispatch, rejectWithValue }) => {
-    // Abort any previous stream
     if (abortController) {
       abortController.abort();
     }
@@ -63,25 +143,12 @@ export const analyzeUrlStream = createAsyncThunk(
 
     try {
       const state = getState() as RootState;
-      const { sessionToken, aiProvider, selectedModel, apiKey } = state.settings;
+      const { aiProvider, selectedModel, apiKey, sessionToken } = state.settings;
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        ...getSessionHeaders(state),
       };
-      if (sessionToken) {
-        headers['X-Session-Token'] = sessionToken;
-      }
-
-      // Also inject from localStorage as fallback
-      try {
-        const stored = localStorage.getItem('perseptor_settings');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.sessionToken && !headers['X-Session-Token']) {
-            headers['X-Session-Token'] = parsed.sessionToken;
-          }
-        }
-      } catch {}
 
       const body: Record<string, any> = { url };
       if (!sessionToken && apiKey) {
@@ -104,59 +171,64 @@ export const analyzeUrlStream = createAsyncThunk(
         throw new Error(errData.error || `HTTP ${response.status}`);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('ReadableStream not supported');
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let finalResult: AnalysisResult | null = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        // Parse SSE events from buffer
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData: SSEEvent = JSON.parse(line.slice(6));
-
-              dispatch(sseEventReceived(eventData));
-
-              if (eventData.stage === 'complete' && eventData.data) {
-                finalResult = eventData.data as AnalysisResult;
-              }
-
-              if (eventData.stage === 'error') {
-                throw new Error(eventData.message);
-              }
-            } catch (parseErr: any) {
-              if (parseErr.message && !parseErr.message.includes('JSON')) {
-                throw parseErr; // Re-throw non-parse errors
-              }
-              console.warn('SSE parse warning:', parseErr);
-            }
-          }
-        }
-      }
-
-      if (finalResult) {
-        return finalResult;
-      }
-
-      throw new Error('Stream ended without complete result');
+      return await readSSEStream(response, dispatch, abortController.signal);
     } catch (error: any) {
       if (error.name === 'AbortError') {
         return rejectWithValue('Analysis cancelled');
       }
       const message = error.message || 'Analysis failed';
+      return rejectWithValue(message);
+    } finally {
+      abortController = null;
+    }
+  }
+);
+
+export const analyzePdfStream = createAsyncThunk(
+  'analysis/analyzePdfStream',
+  async (file: File, { getState, dispatch, rejectWithValue }) => {
+    if (abortController) {
+      abortController.abort();
+    }
+    abortController = new AbortController();
+
+    try {
+      const state = getState() as RootState;
+      const { aiProvider, selectedModel, apiKey, sessionToken } = state.settings;
+
+      const headers: Record<string, string> = {
+        ...getSessionHeaders(state),
+        // Do NOT set Content-Type — browser sets multipart/form-data with boundary
+      };
+
+      const formData = new FormData();
+      formData.append('pdf', file);
+      formData.append('provider', aiProvider);
+      formData.append('model', selectedModel);
+      if (!sessionToken && apiKey) {
+        formData.append('openai_api_key', apiKey);
+      }
+
+      dispatch(sseStreamStarted());
+
+      const response = await fetch('/api/analyze/pdf/stream', {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal: abortController.signal,
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ error: 'PDF upload failed' }));
+        throw new Error(errData.error || `HTTP ${response.status}`);
+      }
+
+      return await readSSEStream(response, dispatch, abortController.signal);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        return rejectWithValue('Analysis cancelled');
+      }
+      const message = error.message || 'PDF analysis failed';
       return rejectWithValue(message);
     } finally {
       abortController = null;
@@ -213,6 +285,12 @@ const analysisSlice = createSlice({
     setUrl(state, action: PayloadAction<string>) {
       state.url = action.payload;
     },
+    setInputMode(state, action: PayloadAction<InputMode>) {
+      state.inputMode = action.payload;
+    },
+    setPdfFileName(state, action: PayloadAction<string | null>) {
+      state.pdfFileName = action.payload;
+    },
     clearAnalysis(state) {
       state.result = null;
       state.error = null;
@@ -242,7 +320,7 @@ const analysisSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // ── SSE Streaming ──
+    // ── URL SSE Streaming ──
     builder
       .addCase(analyzeUrlStream.pending, (state) => {
         state.loading = true;
@@ -255,7 +333,6 @@ const analysisSlice = createSlice({
         state.result = action.payload;
         state.sseProgress = 100;
         state.sseCurrentStage = 'complete';
-        // Add to history
         state.history.unshift({
           id: Date.now().toString(),
           url: state.url,
@@ -267,6 +344,36 @@ const analysisSlice = createSlice({
         }
       })
       .addCase(analyzeUrlStream.rejected, (state, action) => {
+        state.loading = false;
+        state.streaming = false;
+        state.error = action.payload as string;
+        state.sseCurrentStage = 'error';
+      });
+
+    // ── PDF SSE Streaming ──
+    builder
+      .addCase(analyzePdfStream.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.result = null;
+      })
+      .addCase(analyzePdfStream.fulfilled, (state, action) => {
+        state.loading = false;
+        state.streaming = false;
+        state.result = action.payload;
+        state.sseProgress = 100;
+        state.sseCurrentStage = 'complete';
+        state.history.unshift({
+          id: Date.now().toString(),
+          url: `pdf://${state.pdfFileName || 'upload'}`,
+          timestamp: new Date().toISOString(),
+          summary: action.payload.threat_summary?.substring(0, 120) || '',
+        });
+        if (state.history.length > 50) {
+          state.history = state.history.slice(0, 50);
+        }
+      })
+      .addCase(analyzePdfStream.rejected, (state, action) => {
         state.loading = false;
         state.streaming = false;
         state.error = action.payload as string;
@@ -302,6 +409,8 @@ const analysisSlice = createSlice({
 
 export const {
   setUrl,
+  setInputMode,
+  setPdfFileName,
   clearAnalysis,
   clearError,
   sseStreamStarted,
