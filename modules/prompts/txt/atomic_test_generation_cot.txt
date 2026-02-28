@@ -1,0 +1,77 @@
+You are given Sigma detection rules generated from a threat report analysis.
+For EACH Sigma rule, generate a practical Atomic Red Team-style test scenario that validates the detection.
+
+STEP 1 - PARSE THE SIGMA RULE:
+Understand: What log source does it monitor? What fields and values trigger detection?
+What is the detection condition logic? What MITRE technique does it map to?
+
+STEP 2 - DESIGN THE ATOMIC TEST:
+Create a test that produces the EXACT telemetry the Sigma rule monitors:
+- If the rule detects process_creation with specific CommandLine patterns → craft the exact command
+- If the rule detects file_event with specific TargetFilename → create that file
+- If the rule detects registry_event → make that registry modification
+- If the rule detects network_connection → generate that network traffic
+
+STEP 3 - ENSURE SAFETY AND REVERSIBILITY:
+- Use harmless payloads (calc.exe, notepad.exe, echo commands) instead of real malware
+- Include cleanup commands that reverse ALL system changes
+- Mark privilege requirements clearly (admin/user/SYSTEM)
+- Flag any test that could trigger antivirus or EDR
+
+STEP 4 - MAP TO REAL-WORLD CONTEXT:
+- Reference which APT groups or malware families use this technique
+- Link to the MITRE ATT&CK technique page
+- Cite specific Atomic Red Team test IDs if a matching official test exists
+- Explain WHY this test validates the Sigma rule
+
+STEP 5 - DEFINE EXPECTED DETECTION OUTPUT:
+- What Windows Event ID should be generated?
+- What Sysmon Event ID should fire?
+- What specific field values should appear in the log?
+- How would a SOC analyst verify the detection triggered?
+
+SIGMA RULES TO CREATE TESTS FOR:
+{sigma_rules}
+
+THREAT CONTEXT FROM REPORT:
+{threat_context}
+
+RESPOND WITH ONLY THIS JSON ARRAY (no other text):
+[
+  {{
+    "sigma_rule_title": "Title of the Sigma rule this test validates",
+    "test_name": "Descriptive name for the atomic test",
+    "description": "What this test does and why it validates the detection",
+    "mitre_technique": "TXXXX.XXX",
+    "platforms": ["windows"],
+    "privilege_required": "user|admin|SYSTEM",
+    "prerequisites": ["List of required tools/configurations"],
+    "executor": {{
+      "type": "powershell|cmd|bash|manual",
+      "steps": [
+        "Step 1: Detailed instruction with exact command",
+        "Step 2: Next step...",
+        "Step 3: ..."
+      ],
+      "command": "The primary command to execute (copy-pasteable)",
+      "elevation_required": false
+    }},
+    "expected_detection": {{
+      "log_source": "Windows Security / Sysmon / etc.",
+      "event_ids": ["4688", "1"],
+      "key_fields": {{"FieldName": "expected value pattern"}},
+      "sigma_condition_match": "Brief explanation of which Sigma condition this triggers"
+    }},
+    "cleanup": {{
+      "command": "Command to reverse all changes",
+      "description": "What the cleanup does"
+    }},
+    "real_world_reference": {{
+      "threat_actors": ["APT groups that use this technique"],
+      "malware_families": ["Malware that exhibits this behavior"],
+      "mitre_url": "https://attack.mitre.org/techniques/TXXXX/XXX/",
+      "atomic_red_team_id": "Official ART test ID if exists, otherwise null"
+    }},
+    "safety_notes": "Any warnings about AV triggers, system impact, etc."
+  }}
+]

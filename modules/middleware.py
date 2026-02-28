@@ -132,3 +132,43 @@ def validate_request_size(max_mb: int = None):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+
+from modules.session_manager import session_manager
+
+def extract_provider_params(data):
+    """
+    Extract provider parameters from request data OR session token.
+    Priority: session token > request body > defaults.
+    """
+    api_key = ''
+    provider_name = data.get('provider', 'openai')
+    model_name = data.get('model', None)
+
+    # 1) Try session token first (from X-Session-Token header)
+    session_token = request.headers.get('X-Session-Token')
+    if session_token:
+        session_data = session_manager.validate_session(session_token)
+        if session_data:
+            api_key = session_data['api_key']
+            # Session provider/model override request body if not explicitly set
+            if not data.get('provider'):
+                provider_name = session_data.get('provider', 'openai')
+            if not data.get('model') and session_data.get('model_preference'):
+                model_name = session_data['model_preference']
+            logger.info(f"API key resolved from session token (provider: {provider_name})")
+        else:
+            logger.warning("Invalid or expired session token provided")
+
+    # 2) Fallback to request body
+    if not api_key:
+        api_key = data.get('api_key') or data.get('openai_api_key', '')
+
+    # Auto-detect provider from key prefix if not specified
+    if provider_name == 'openai' and api_key:
+        if api_key.startswith('sk-ant-'):
+            provider_name = 'anthropic'
+        elif api_key.startswith('AIza'):
+            provider_name = 'google'
+
+    return api_key, provider_name, model_name

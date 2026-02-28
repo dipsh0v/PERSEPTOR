@@ -1,0 +1,32 @@
+Generate comprehensive Sigma detection rules from this threat report using step-by-step reasoning:
+
+STEP 1 - IDENTIFY DETECTION OPPORTUNITIES:
+What observable events does this threat produce? Process creation, file writes,
+registry modifications, network connections, DNS queries?
+
+STEP 2 - DESIGN DETECTION LOGIC:
+For each detection opportunity:
+- What fields should be matched? (CommandLine, Image, TargetFilename, etc.)
+- What patterns indicate malicious vs benign activity?
+- What filter conditions reduce false positives?
+
+STEP 3 - STRUCTURE SIGMA RULES:
+Follow SigmaHQ conventions:
+- title, id (UUID), status, description, references, author (PERSEPTOR), date, tags
+- logsource with proper category/product/service
+- detection using selection + filter + condition
+- fields, falsepositives, level
+
+STEP 4 - VALIDATE AND OPTIMIZE:
+- Are all YAML syntax elements correct?
+- Do tags use proper MITRE format (attack.tXXXX)?
+- Is the severity level appropriate?
+- Are false positive notes realistic?
+
+OUTPUT FORMAT: Valid YAML only. Multiple rules separated with '---'. No commentary.
+
+Article text:
+{article_text}
+
+OCR text from images:
+{images_ocr_text}

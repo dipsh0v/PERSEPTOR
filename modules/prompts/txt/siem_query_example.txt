@@ -1,0 +1,22 @@
+{
+  "splunk": {
+    "description": "Detect suspicious PowerShell download and execute patterns",
+    "query": "index=windows sourcetype=WinEventLog:Security EventCode=4688 (NewProcessName=*powershell.exe OR NewProcessName=*pwsh.exe) AND (CommandLine=*Invoke-WebRequest* OR CommandLine=*DownloadString* OR CommandLine=*Net.WebClient*) AND (CommandLine=*Invoke-Expression* OR CommandLine=*IEX*) | stats count by NewProcessName, CommandLine, ParentProcessName, SubjectUserName | where count > 0",
+    "notes": "Consider adding tstats for better performance on large datasets. Adjust index and sourcetype for your environment."
+  },
+  "qradar": {
+    "description": "Detect suspicious PowerShell download and execute patterns",
+    "query": "SELECT sourceip, username, LOGSOURCENAME(logsourceid) as logsource, UTF8(payload) as cmdline FROM events WHERE devicetype=12 AND LOWER(processname) LIKE '%powershell%' AND (UTF8(payload) LIKE '%Invoke-WebRequest%' OR UTF8(payload) LIKE '%DownloadString%') AND (UTF8(payload) LIKE '%Invoke-Expression%' OR UTF8(payload) LIKE '%IEX%') LAST 24 HOURS",
+    "notes": "Adjust LAST clause and add custom properties if available."
+  },
+  "elastic": {
+    "description": "Detect suspicious PowerShell download and execute patterns",
+    "query": "process.name:(powershell.exe OR pwsh.exe) AND process.command_line:(*Invoke-WebRequest* OR *DownloadString* OR *Net.WebClient*) AND process.command_line:(*Invoke-Expression* OR *IEX*)",
+    "notes": "Index pattern: winlogbeat-* or logs-endpoint*. Consider using EQL for sequence detection."
+  },
+  "sentinel": {
+    "description": "Detect suspicious PowerShell download and execute patterns",
+    "query": "SecurityEvent | where EventID == 4688 | where (NewProcessName has 'powershell' or NewProcessName has 'pwsh') | where (CommandLine has 'Invoke-WebRequest' or CommandLine has 'DownloadString' or CommandLine has 'Net.WebClient') | where (CommandLine has 'Invoke-Expression' or CommandLine has 'IEX') | project TimeGenerated, Computer, Account, NewProcessName, CommandLine, ParentProcessName",
+    "notes": "Also check DeviceProcessEvents for Defender for Endpoint data."
+  }
+}

@@ -1,0 +1,40 @@
+Convert these Sigma rules to platform-specific SIEM queries using this process.
+You are a senior SOC engineer. Your queries will be DIRECTLY deployed in production SIEMs.
+BAD QUERIES CAUSE PERFORMANCE ISSUES AND ALERT FATIGUE — be precise and efficient.
+
+STEP 1 - PARSE SIGMA LOGIC:
+Understand: What fields are referenced? What operators are used?
+What is the detection condition logic? How many separate detection rules exist?
+
+STEP 2 - MAP FIELD NAMES:
+Sigma field -> Splunk field -> QRadar property -> Elastic field -> Sentinel table.column
+
+STEP 3 - BUILD OPTIMIZED, PRODUCTION-READY QUERIES:
+CRITICAL RULES FOR QUERY QUALITY:
+- DO NOT combine all Sigma rules into a single massive monolithic query. Instead, create ONE focused query per Sigma rule or per logical detection group (max 3 related detections per query).
+- Each query should be SHORT (under 40 lines), READABLE, and MAINTAINABLE.
+- Use proper indentation and line breaks for readability.
+- Include comments explaining each detection section.
+- Splunk: Use proper index, sourcetype. Prefer simple search over tstats unless dealing with data model acceleration. Use `| where` for complex logic instead of cramming into search.
+- QRadar: Use correct AQL syntax, LIMIT results, efficient WHERE clauses. Use START/STOP for time ranges.
+- Elastic: Use proper index patterns, bool query with must/should/must_not. Return JSON DSL.
+- Sentinel: Use appropriate table (SecurityEvent, DeviceProcessEvents), clean KQL with let statements for readability.
+
+STEP 4 - ADD OPERATIONAL CONTEXT:
+For each query include:
+- A one-line description of what this query detects
+- Expected log sources and required data onboarding
+- Estimated noise level (low/medium/high) and tuning guidance
+
+SIGMA RULES:
+{sigma_rules}
+
+RESPOND WITH ONLY THIS JSON STRUCTURE:
+{{
+  "splunk": {{"description": "...", "query": "...", "notes": "..."}},
+  "qradar": {{"description": "...", "query": "...", "notes": "..."}},
+  "elastic": {{"description": "...", "query": "...", "notes": "..."}},
+  "sentinel": {{"description": "...", "query": "...", "notes": "..."}}
+}}
+
+NO OTHER TEXT. ONLY THE JSON OBJECT.

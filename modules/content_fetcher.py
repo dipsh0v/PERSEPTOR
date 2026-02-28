@@ -356,3 +356,114 @@ def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
     except Exception as e:
         logger.error(f"Error processing PDF bytes: {e}")
     return text
+
+
+# ─── Smart URL Fetcher ────────────────────────────────────────────────────────
+
+_FETCH_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+}
+
+def _smart_fetch_url(url: str) -> tuple:
+    """
+    Fetch URL content with fallback strategy:
+    1. requests + BeautifulSoup with proper headers
+    2. If text is too short (<200 chars) or HTTP fails, use Playwright for JS-rendered pages
+    Returns (text_content, soup, used_playwright)
+    """
+    soup = None
+    text_content = ""
+    http_failed = False
+
+    # Step 1: Try standard HTTP fetch with proper headers
+    try:
+        session = requests.Session()
+        session.headers.update(_FETCH_HEADERS)
+        resp = session.get(url, timeout=30, allow_redirects=True)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.content, "html.parser")
+    except requests.exceptions.RequestException as e:
+        # Retry once with SSL verification disabled (some sites have cert issues)
+        logger.warning(f"HTTP fetch failed for {url}: {e} — retrying with verify=False")
+        try:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            resp = requests.get(url, timeout=30, headers=_FETCH_HEADERS,
+                                allow_redirects=True, verify=False)
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.content, "html.parser")
+        except requests.exceptions.RequestException as e2:
+            logger.warning(f"HTTP retry also failed for {url}: {e2} — will try Playwright")
+            http_failed = True
+
+    if soup is None:
+        soup = BeautifulSoup("", "html.parser")
+
+    # Remove script/style/nav/footer noise before extracting text
+    if not http_failed:
+        for tag in soup(["script", "style", "nav", "footer", "header", "noscript", "aside"]):
+            tag.decompose()
+
+    import re as _re
+
+    # Try multiple strategies to find the main content area (best match wins)
+    best_text = ""
+
+    # Strategy 1: Common article body class names
+    _content_classes = [
+        "articlebody", "article-body", "article-content",
+        "entry-content", "post-body", "post-content",
+        "story-body", "content-body", "blog-content",
+        "article__body", "articleBody",
+    ]
+    for cls_name in _content_classes:
+        el = soup.find(class_=lambda x: x and cls_name in str(x).lower())
+        if el:
+            candidate = el.get_text(separator="\n", strip=True)
+            if len(candidate) > len(best_text):
+                best_text = candidate
+
+    # Strategy 2: <article> or <main> tags
+    if len(best_text) < 200:
+        for tag_name in ["article", "main"]:
+            el = soup.find(tag_name)
+            if el:
+                candidate = el.get_text(separator="\n", strip=True)
+                if len(candidate) > len(best_text):
+                    best_text = candidate
+
+    # Strategy 3: Largest <div> with significant text (heuristic)
+    if len(best_text) < 200:
+        for div in soup.find_all("div"):
+            div_text = div.get_text(separator="\n", strip=True)
+            if len(div_text) > len(best_text) and len(div_text) > 300:
+                # Avoid huge wrapper divs — check text density
+                html_len = len(str(div))
+                if html_len > 0 and len(div_text) / html_len > 0.15:
+                    best_text = div_text
+
+    # Strategy 4: Full page text as last resort
+    if len(best_text) < 200:
+        best_text = soup.get_text(separator="\n", strip=True)
+
+    text_content = _re.sub(r'\n{3,}', '\n\n', best_text).strip()
+
+    # Step 2: If HTTP failed or text is too short, try Playwright for JS-rendered content
+    if http_failed or len(text_content) < 200:
+        reason = "HTTP failed" if http_failed else f"only {len(text_content)} chars"
+        logger.info(f"Static fetch insufficient ({reason}), trying Playwright...")
+        try:
+            pw_result = fetch_page_content(url, wait_time=12)
+            pw_text = pw_result.get("text", "")
+            if len(pw_text) > len(text_content):
+                logger.info(f"Playwright got {len(pw_text)} chars (vs {len(text_content)} static)")
+                text_content = pw_text
+                return text_content, soup, True
+        except Exception as e:
+            logger.warning(f"Playwright fallback failed: {e}")
+
+    return text_content, soup, False

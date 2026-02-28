@@ -100,7 +100,7 @@ class OutputValidator:
         # Strategy 1: Fix invalid backslash escapes character-by-character.
         # AI often produces \Users, \System32, \AppData, \test etc.
         # Valid JSON escapes after \ are: " \ / b f n r t u
-        valid_escapes = set('"\\\/bfnrtu')
+        valid_escapes = set(r'"\/bfnrtu')
         chars = list(text)
         i = 0
         while i < len(chars) - 1:

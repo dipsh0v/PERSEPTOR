@@ -36,7 +36,7 @@ const Sidebar: React.FC = () => {
     { text: 'Threat Analysis', icon: <SearchIcon />, path: '/' },
     { text: 'Reports', icon: <AssessmentIcon />, path: '/reports' },
     { text: 'Detection QA', icon: <TrackChangesIcon />, path: '/qa' },
-    { text: 'Created Rules', icon: <SigmaIcon color={theme.palette.mode === 'dark' ? '#94a3b8' : '#475569'} />, path: '/rules' },
+    { text: 'Created Rules', icon: <SigmaIcon />, path: '/rules' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];
 
@@ -52,10 +52,10 @@ const Sidebar: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         background: theme.palette.mode === 'dark'
-          ? `linear-gradient(180deg, ${alpha('#0f1629', 0.97)} 0%, ${alpha('#0a0e1a', 0.99)} 100%)`
-          : `linear-gradient(180deg, ${alpha('#ffffff', 0.95)} 0%, ${alpha('#f8fafc', 0.98)} 100%)`,
-        backdropFilter: 'blur(24px)',
-        borderRight: `1px solid ${alpha(theme.palette.divider, 0.4)}`,
+          ? alpha(theme.palette.background.paper, 0.98)
+          : alpha(theme.palette.background.paper, 0.98),
+        backdropFilter: 'blur(16px)',
+        borderRight: `1px solid ${theme.palette.divider}`,
         boxShadow: theme.palette.mode === 'dark'
           ? `4px 0 24px ${alpha('#000', 0.3)}`
           : `4px 0 24px ${alpha('#000', 0.05)}`,
@@ -74,28 +74,21 @@ const Sidebar: React.FC = () => {
           sx={{
             fontWeight: 800,
             letterSpacing: '0.08em',
-            background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            color: theme.palette.text.primary,
             position: 'relative',
             overflow: 'hidden',
             cursor: 'default',
-            '&::after': {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            '&::before': {
               content: '""',
-              position: 'absolute',
-              top: 0,
-              left: '-100%',
-              width: '60%',
-              height: '100%',
-              background: 'linear-gradient(120deg, transparent, rgba(255,255,255,0.2), transparent)',
-              transform: 'skewX(-20deg)',
-              animation: 'sidebarShine 3s ease-in-out infinite',
-            },
-            '@keyframes sidebarShine': {
-              '0%': { left: '-100%' },
-              '100%': { left: '200%' },
-            },
+              display: 'inline-block',
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              backgroundColor: theme.palette.primary.main,
+            }
           }}
         >
           PERSEPTOR

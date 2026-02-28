@@ -10,15 +10,15 @@ import { createTheme, Theme, alpha } from '@mui/material/styles';
 const tokens = {
   // Brand colors
   primary: {
-    main: '#6366f1',      // Indigo-500
-    light: '#818cf8',     // Indigo-400
-    dark: '#4f46e5',      // Indigo-600
+    main: '#3b82f6',      // Blue-500
+    light: '#60a5fa',     // Blue-400
+    dark: '#2563eb',      // Blue-600
     contrast: '#ffffff',
   },
   secondary: {
-    main: '#ec4899',      // Pink-500
-    light: '#f472b6',     // Pink-400
-    dark: '#db2777',      // Pink-600
+    main: '#10b981',      // Emerald-500
+    light: '#34d399',     // Emerald-400
+    dark: '#059669',      // Emerald-600
     contrast: '#ffffff',
   },
   accent: {
@@ -30,11 +30,11 @@ const tokens = {
   },
   // Dark mode surfaces
   dark: {
-    bg: '#0a0e1a',          // Deep navy
-    surface: '#111827',      // Card surface
-    surfaceLight: '#1f2937', // Elevated surface
-    border: '#1e293b',       // Subtle border
-    borderLight: '#334155',  // Hover border
+    bg: '#09090b',          // Zinc 950
+    surface: '#18181b',      // Zinc 900
+    surfaceLight: '#27272a', // Zinc 800
+    border: '#27272a',       // Subtle border
+    borderLight: '#3f3f46',  // Hover border
   },
   // Light mode surfaces
   light: {
@@ -51,10 +51,10 @@ const tokens = {
   },
   // Radius
   radius: {
-    sm: 8,
-    md: 12,
-    lg: 16,
-    xl: 20,
+    sm: 6,
+    md: 8,
+    lg: 12,
+    xl: 16,
     full: 9999,
   },
 };
@@ -79,19 +79,17 @@ const getComponents = (mode: 'dark' | 'light') => {
         root: {
           borderRadius: tokens.radius.lg,
           backgroundImage: 'none',
-          backgroundColor: isDark ? alpha(surface.surface, 0.7) : surface.surface,
-          backdropFilter: 'blur(20px)',
-          border: `1px solid ${alpha(surface.border, isDark ? 0.5 : 1)}`,
+          backgroundColor: isDark ? surface.surface : surface.surface,
+          border: `1px solid ${surface.border}`,
           boxShadow: isDark
-            ? `0 4px 24px ${alpha('#000', 0.3)}, 0 0 0 1px ${alpha(surface.border, 0.5)}`
-            : `0 4px 24px ${alpha('#000', 0.06)}, 0 0 0 1px ${alpha(surface.border, 0.5)}`,
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            ? `0 1px 3px ${alpha('#000', 0.5)}, 0 1px 2px ${alpha('#000', 0.25)}`
+            : `0 1px 3px ${alpha('#000', 0.05)}, 0 1px 2px ${alpha('#000', 0.025)}`,
+          transition: 'all 0.2s ease',
           '&:hover': {
-            borderColor: alpha(tokens.primary.main, 0.3),
+            borderColor: isDark ? tokens.primary.dark : tokens.primary.light,
             boxShadow: isDark
-              ? `0 8px 40px ${alpha('#000', 0.4)}, 0 0 0 1px ${alpha(tokens.primary.main, 0.2)}`
-              : `0 8px 40px ${alpha('#000', 0.1)}, 0 0 0 1px ${alpha(tokens.primary.main, 0.15)}`,
-            transform: 'translateY(-2px)',
+              ? `0 4px 12px ${alpha('#000', 0.5)}, 0 0 0 1px ${alpha(tokens.primary.main, 0.1)}`
+              : `0 4px 12px ${alpha('#000', 0.08)}, 0 0 0 1px ${alpha(tokens.primary.main, 0.1)}`,
           },
         },
       },
@@ -101,8 +99,8 @@ const getComponents = (mode: 'dark' | 'light') => {
         root: {
           borderRadius: tokens.radius.lg,
           backgroundImage: 'none',
-          backgroundColor: isDark ? alpha(surface.surface, 0.6) : surface.surface,
-          backdropFilter: 'blur(16px)',
+          backgroundColor: isDark ? surface.surface : surface.surface,
+          border: `1px solid ${surface.border}`,
         },
       },
     },
@@ -169,11 +167,11 @@ const getComponents = (mode: 'dark' | 'light') => {
           borderRadius: `${tokens.radius.md}px !important`,
           '&:before': { display: 'none' },
           backgroundImage: 'none',
-          backgroundColor: isDark ? alpha(surface.surface, 0.4) : alpha(surface.surfaceLight, 0.5),
-          border: `1px solid ${alpha(surface.border, isDark ? 0.3 : 0.5)}`,
+          backgroundColor: isDark ? surface.surfaceLight : surface.surfaceLight,
+          border: `1px solid ${surface.border}`,
           transition: 'all 0.2s ease',
           '&:hover': {
-            borderColor: alpha(tokens.primary.main, 0.2),
+            borderColor: alpha(tokens.primary.main, 0.4),
           },
         },
       },

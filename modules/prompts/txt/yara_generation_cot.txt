@@ -1,0 +1,25 @@
+Generate YARA rules for this threat using step-by-step analysis:
+
+STEP 1 - IDENTIFY SIGNATURES:
+What unique strings, byte patterns, or structures can identify this threat?
+Look for: malware strings, encryption keys, C2 patterns, file markers.
+
+STEP 2 - DESIGN RULE LOGIC:
+Combine signatures with conditions:
+- String matching (text, hex, regex)
+- File size constraints
+- Magic bytes / file format checks
+- Entropy analysis indicators
+
+STEP 3 - OPTIMIZE FOR PERFORMANCE:
+- Use private strings where appropriate
+- Order conditions by evaluation cost
+- Use tags for categorization
+
+Analysis data:
+{analysis_data}
+
+Return valid YARA rules as JSON array:
+[{{"name": "rule_name", "description": "what it detects", "rule": "full YARA rule text"}}]
+
+ONLY return the JSON array.

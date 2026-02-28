@@ -1,0 +1,31 @@
+{
+  "sigma_title": "APT29 Cozy Bear SolarWinds Supply Chain Attack Indicators",
+  "sigma_description": "Detects indicators associated with APT29 SUNBURST backdoor and Teardrop malware",
+  "indicators_of_compromise": {
+    "ips": ["13.59.205.66", "54.193.127.66"],
+    "domains": ["avsvmcloud.com", "freescanonline.com"],
+    "urls": ["https://avsvmcloud.com/api/v1/update"],
+    "email_addresses": [],
+    "file_hashes": ["b91ce2fa41029f6955bff20079468448", "32519b85c0b422e4656de6e6c41878e95fd95026267daab4215ee59c107d6c77"],
+    "filenames": ["SolarWinds.Orion.Core.BusinessLayer.dll", "gracious_truth.exe"],
+    "registry_keys": ["HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\\SolarWindsUpdate"],
+    "process_names": ["SolarWinds.BusinessLayerHost.exe"],
+    "malicious_commands": ["rundll32.exe C:\\Windows\\SysWOW64\\Rundll32.exe,EntryPoint"]
+  },
+  "ttps": [
+    {"mitre_id": "T1195.002", "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain", "tactic": "Initial Access", "description": "Trojanized SolarWinds Orion update"},
+    {"mitre_id": "T1059.001", "technique_name": "PowerShell", "tactic": "Execution", "description": "PowerShell used for post-exploitation commands"},
+    {"mitre_id": "T1071.001", "technique_name": "Web Protocols", "tactic": "Command and Control", "description": "HTTPS used for C2 communication"}
+  ],
+  "suspicious_patterns": ["DGA subdomain pattern under avsvmcloud.com", "Timestomping of malicious DLL"],
+  "process_chains": ["solarwinds.businesslayerhost.exe -> rundll32.exe -> cmd.exe"],
+  "cves": [],
+  "tools_or_malware": ["SUNBURST", "Teardrop", "Raindrop"],
+  "threat_actors": ["APT29", "Cozy Bear", "Nobelium"],
+  "campaigns": ["SolarWinds Supply Chain Attack"],
+  "malicious_execution_chains": ["SolarWinds update -> SUNBURST backdoor -> Teardrop loader -> Cobalt Strike"],
+  "image_based_indicators": [],
+  "obfuscations_refanged": [],
+  "confidence_level": "high",
+  "notes": "High-confidence APT29 attribution based on infrastructure overlap and TTP similarity"
+}

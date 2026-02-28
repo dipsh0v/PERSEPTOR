@@ -1,0 +1,29 @@
+Analyze the following threat report text using this step-by-step reasoning process:
+
+STEP 1 - IDENTIFY THREAT CONTEXT:
+Think about: What type of threat is described? (APT, ransomware, vulnerability exploitation, etc.)
+Who are the likely targets? What is the threat actor's motivation?
+
+STEP 2 - EXTRACT KEY FINDINGS:
+Identify: CVEs/vulnerabilities with severity, targeted sectors/regions, campaign overview,
+the attack narrative (how the attack unfolds from initial access to impact).
+
+STEP 3 - ASSESS IMPACT:
+Evaluate: What is the overall severity? What is the potential blast radius?
+What defensive gaps does this exploit?
+
+STEP 4 - RECOMMEND ACTIONS:
+Determine: Immediate mitigations, detection priorities, long-term defensive improvements.
+
+CONSTRAINTS:
+- Plain text output only, no markdown formatting
+- Maximum 300 words
+- State "Not identified" for missing data points
+- Be precise with technical details
+- DO NOT list IoCs (IPs, domains, hashes, emails, file names) — they are extracted separately
+- DO NOT list MITRE ATT&CK technique IDs or TTPs — they are mapped separately
+- DO NOT list tools or malware family names as bullet points — they are extracted separately
+- Focus on the NARRATIVE: what happened, who did it, why, how it impacts defenders, and what to do about it
+
+TEXT TO ANALYZE:
+{text}

@@ -13,3 +13,4 @@ pysigma>=0.10.0
 PyPDF2>=3.0.0
 python-dotenv>=1.0.0
 cryptography>=41.0.0
+alembic>=1.12.0

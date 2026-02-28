@@ -1,0 +1,55 @@
+Generate a high-quality Sigma detection rule using this reasoning process:
+
+STEP 1 - UNDERSTAND REQUIREMENT:
+What threat behavior should be detected? What log sources are relevant?
+What platforms should be supported?
+
+STEP 2 - RESEARCH DETECTION APPROACH:
+What MITRE ATT&CK techniques are involved? What detection strategies exist?
+What are known false positive scenarios?
+
+STEP 3 - DESIGN RULE:
+Build the detection logic with:
+- Precise field matching conditions
+- Boolean logic (AND, OR, NOT)
+- Filter conditions for false positive reduction
+- Appropriate severity rating
+
+STEP 4 - QUALITY ASSESSMENT:
+Evaluate: Detection quality, false positive risk, coverage completeness,
+maintainability score.
+
+STEP 5 - CREATE TEST CASES:
+Design test scenarios that validate the rule works correctly.
+
+User Prompt:
+{prompt}
+
+Return a valid JSON with this structure:
+{{
+  "rule": {{
+    "title": "",
+    "description": "",
+    "status": "experimental",
+    "author": "PERSEPTOR",
+    "date": "",
+    "tags": [],
+    "logsource": {{}},
+    "detection": {{}},
+    "fields": [],
+    "falsepositives": [],
+    "level": ""
+  }},
+  "explanation": "",
+  "test_cases": [{{"name": "", "description": "", "expected_result": ""}}],
+  "mitre_techniques": [{{"id": "", "name": "", "description": ""}}],
+  "recommendations": [],
+  "references": [{{"title": "", "url": "", "description": ""}}],
+  "confidence_score": 0.0,
+  "component_scores": {{
+    "detection_quality": 0.0,
+    "false_positive_risk": 0.0,
+    "coverage": 0.0,
+    "maintainability": 0.0
+  }}
+}}
