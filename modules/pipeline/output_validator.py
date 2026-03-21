@@ -56,6 +56,69 @@ class OutputValidator:
     # ─── Validation Methods ──────────────────────────────────────────────
 
     @staticmethod
+    def _fix_backslashes(text: str) -> str:
+        """Fix unescaped backslashes in JSON strings using char-by-char scan.
+
+        The regex approach fails on even/odd backslash pairs (e.g. \\\\e is valid
+        JSON but regex corrupts it to \\\\\\e).  This scanner correctly skips
+        already-escaped \\\\ pairs and only doubles truly naked backslashes.
+
+        Also detects path-context \\t \\n \\r \\b \\f (e.g. windows\\temp) and
+        doubles them so they don't become JSON control chars.
+        """
+        valid_simple = set('"\\\/bfnrt')
+        path_ambiguous = set('bnfrt')
+        hex_chars = set('0123456789abcdefABCDEF')
+
+        chars = list(text)
+        i = 0
+        while i < len(chars) - 1:
+            if chars[i] != '\\':
+                i += 1
+                continue
+
+            nxt = chars[i + 1]
+
+            # ── already-escaped pair \\  →  skip both ──────────────
+            if nxt == '\\':
+                i += 2
+                continue
+
+            # ── \\uXXXX  →  valid only with 4 hex digits ──────────
+            if nxt == 'u':
+                if (i + 5 < len(chars)
+                        and all(c in hex_chars for c in chars[i + 2:i + 6])):
+                    i += 6        # valid \uXXXX
+                else:
+                    chars.insert(i, '\\')   # fix \u → \\u
+                    i += 2
+                continue
+
+            # ── ambiguous: \b \f \n \r \t — could be JSON or a path ─
+            if nxt in path_ambiguous:
+                prev = chars[i - 1] if i > 0 else ''
+                after = chars[i + 2] if i + 2 < len(chars) else ''
+                if ((prev.isalnum() or prev in '_:')
+                        and (after.isalnum() or after == '_')):
+                    # path context: windows\temp → windows\\temp
+                    chars.insert(i, '\\')
+                    i += 2
+                else:
+                    i += 2   # genuine JSON escape
+                continue
+
+            # ── other valid JSON escapes: \" \/ ─────────────────────
+            if nxt in valid_simple:
+                i += 2
+                continue
+
+            # ── invalid escape like \e \S \W \P → double the backslash
+            chars.insert(i, '\\')
+            i += 2
+
+        return ''.join(chars)
+
+    @staticmethod
     def validate_json(text: str) -> Tuple[bool, Any]:
         """Parse and validate JSON from AI response."""
         text = text.strip()
@@ -82,6 +145,9 @@ class OutputValidator:
                 if arr_start != -1 and arr_end > arr_start:
                     text = text[arr_start:arr_end]
 
+        # Pre-fix unescaped backslashes before first parse attempt
+        text = OutputValidator._fix_backslashes(text)
+
         try:
             data = json.loads(text)
             return True, data
@@ -97,24 +163,9 @@ class OutputValidator:
     def _repair_json(text: str) -> Optional[Any]:
         """Attempt to repair common JSON issues from AI responses."""
 
-        # Strategy 1: Fix invalid backslash escapes character-by-character.
-        # AI often produces \Users, \System32, \AppData, \test etc.
-        # Valid JSON escapes after \ are: " \ / b f n r t u
-        valid_escapes = set('"\\\/bfnrtu')
-        chars = list(text)
-        i = 0
-        while i < len(chars) - 1:
-            if chars[i] == '\\':
-                next_char = chars[i + 1]
-                if next_char not in valid_escapes:
-                    # Invalid escape like \U, \S, \P → double the backslash
-                    chars.insert(i, '\\')
-                    i += 2  # skip both backslashes
-                else:
-                    i += 2  # skip valid escape sequence
-            else:
-                i += 1
-        repaired = ''.join(chars)
+        # Strategy 1: Same char-by-char backslash fix as _fix_backslashes
+        # (second pass in case the first missed edge cases)
+        repaired = OutputValidator._fix_backslashes(text)
 
         # Strategy 2: Remove trailing commas
         repaired = re.sub(r',\s*}', '}', repaired)
@@ -143,8 +194,8 @@ class OutputValidator:
             logger.debug(f"Repair attempt 2 (truncated) failed at pos {e.pos}: {e.msg}")
 
         # Strategy 5: Nuclear option — strip all backslashes that aren't
-        # part of \n, \t, \", \\  (lossy but better than no data)
-        nuclear = re.sub(r'\\(?![nrt"\\])', '', repaired)
+        # part of \n, \t, \r, \", \\, \uXXXX  (lossy but better than no data)
+        nuclear = re.sub(r'\\(?![nrt"\\]|u[0-9a-fA-F]{4})', '', repaired)
         try:
             return json.loads(nuclear)
         except json.JSONDecodeError as e:

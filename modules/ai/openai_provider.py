@@ -81,7 +81,7 @@ class OpenAIProvider(AIProvider):
         messages: List[Message],
         model: Optional[str] = None,
         temperature: float = 0.1,
-        max_tokens: int = 4096,
+        max_tokens: int = 16384,
         **kwargs,
     ) -> AIResponse:
         model_id = self._resolve_model(model)
@@ -201,7 +201,7 @@ class OpenAIProvider(AIProvider):
             latency_ms=latency,
         )
 
-    def generate_stream(self, messages, model=None, temperature=0.1, max_tokens=4096, **kwargs):
+    def generate_stream(self, messages, model=None, temperature=0.1, max_tokens=16384, **kwargs):
         """Stream response chunks."""
         model_id = self._resolve_model(model)
 

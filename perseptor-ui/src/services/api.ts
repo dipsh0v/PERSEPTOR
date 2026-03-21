@@ -142,6 +142,21 @@ export interface SIEMQueries {
   sentinel: SIEMQuery;
 }
 
+export interface HuntingPlatformQuery {
+  query: string;
+  description: string;
+  recommended_timerange: string;
+  expected_results: string;
+}
+
+export interface HuntingQueries {
+  hunting_hypothesis?: string;
+  splunk?: HuntingPlatformQuery;
+  qradar?: HuntingPlatformQuery;
+  elastic?: HuntingPlatformQuery;
+  sentinel?: HuntingPlatformQuery;
+}
+
 export interface AnalysisData {
   threat_summary: string;
   iocs: string[];
@@ -166,6 +181,7 @@ export interface MitreTechnique {
   confidence: number;
   source: string;
   keyword_hits?: number;
+  description?: string;
 }
 
 export interface MitreMapping {
@@ -247,6 +263,7 @@ export interface AnalysisResult {
   }>;
   generated_sigma_rules: string;
   siem_queries: SIEMQueries;
+  hunting_queries?: HuntingQueries;
   atomic_tests?: AtomicTest[];
   yara_rules: Array<{
     name: string;

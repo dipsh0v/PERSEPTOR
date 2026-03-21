@@ -115,6 +115,7 @@ const Reports: React.FC = () => {
   /* ---- code block style ---- */
   const codeBlockSx = {
     whiteSpace: 'pre-wrap' as const,
+    wordBreak: 'break-word' as const,
     fontFamily: '"JetBrains Mono", monospace',
     fontSize: '0.8rem',
     lineHeight: 1.7,
@@ -124,6 +125,8 @@ const Reports: React.FC = () => {
     backgroundColor: isDark ? alpha('#000', 0.4) : alpha('#0f172a', 0.04),
     color: isDark ? '#e2e8f0' : '#334155',
     overflow: 'auto',
+    maxWidth: '100%',
+    maxHeight: '400px',
   };
 
   /* ---- inner accordion style ---- */
@@ -133,7 +136,8 @@ const Reports: React.FC = () => {
     '&:before': { display: 'none' },
     border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
     borderRadius: '12px !important',
-    overflow: 'hidden',
+    overflow: 'hidden' as const,
+    '& .MuiAccordionDetails-root': { overflow: 'auto', maxWidth: '100%' },
     transition: 'border-color 0.3s ease',
     '&:hover': { borderColor: alpha(theme.palette.primary.main, 0.3) },
   };
@@ -142,14 +146,14 @@ const Reports: React.FC = () => {
     <>
       <style>{shimmerKf}</style>
 
-      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 960, mx: 'auto', width: '100%', overflow: 'hidden' }}>
+      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: 'auto', width: '100%', overflowX: 'hidden', overflow: 'hidden' }}>
         {/* ── Page Header ── */}
         <Box sx={{
           display: 'flex', alignItems: 'center', gap: 2.5, mb: 1,
           animation: 'reportsFadeSlideUp 0.6s ease-out',
         }}>
           <Box sx={{
-            width: 56, height: 56, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 60, height: 60, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
             boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.35)}`,
           }}>
@@ -183,7 +187,9 @@ const Reports: React.FC = () => {
               px: 2.5, py: 1.5, borderRadius: '12px',
               border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
               backdropFilter: 'blur(12px)',
-              backgroundColor: alpha(theme.palette.background.paper, isDark ? 0.4 : 0.7),
+              background: isDark
+                ? `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.4)}, ${alpha(theme.palette.primary.main, 0.04)})`
+                : `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.7)}, ${alpha(theme.palette.primary.main, 0.03)})`,
             }}>
               <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.65rem' }}>
                 {s.label}
@@ -243,18 +249,28 @@ const Reports: React.FC = () => {
               >
                 <Accordion
                   sx={{
+                    position: 'relative',
                     background: alpha(theme.palette.background.paper, isDark ? 0.45 : 0.8),
                     backdropFilter: 'blur(16px)',
                     boxShadow: 'none',
                     '&:before': { display: 'none' },
                     border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-                    borderRadius: '16px !important',
+                    borderRadius: '20px !important',
                     overflow: 'hidden',
                     transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0, left: 0, right: 0, height: '3px',
+                      background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                      opacity: 0.6,
+                      borderRadius: '20px 20px 0 0',
+                    },
                     '&:hover': {
                       transform: 'translateY(-2px)',
                       borderColor: alpha(theme.palette.primary.main, 0.3),
                       boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.1)}`,
+                      '&::after': { opacity: 1 },
                     },
                   }}
                 >
@@ -328,12 +344,126 @@ const Reports: React.FC = () => {
 
                     {/* ── Threat Summary ── */}
                     <SectionHeader icon="threat" label="Threat Summary" />
-                    <Typography variant="body2" sx={{
-                      whiteSpace: 'pre-wrap', lineHeight: 1.9,
-                      color: 'text.secondary', mb: 4, pl: 1,
-                    }}>
-                      {report.threat_summary}
-                    </Typography>
+                    <Box sx={{ mb: 4 }}>
+                      {(() => {
+                        const text = report.threat_summary || '';
+                        const sections = text.split(/━━━\s*/);
+                        if (sections.length <= 1) {
+                          return (
+                            <Typography variant="body2" sx={{
+                              whiteSpace: 'pre-wrap', lineHeight: 1.9,
+                              color: 'text.secondary', pl: 1,
+                            }}>
+                              {text}
+                            </Typography>
+                          );
+                        }
+                        const sectionMeta: Record<string, { color: string; icon: React.ReactNode; gradient: string }> = {
+                          'THREAT OVERVIEW': {
+                            color: '#ef4444',
+                            icon: <ShieldIcon sx={{ fontSize: 18 }} />,
+                            gradient: 'linear-gradient(135deg, #ef4444, #f97316)',
+                          },
+                          'ATTACK NARRATIVE': {
+                            color: '#f59e0b',
+                            icon: <WarningAmberIcon sx={{ fontSize: 18 }} />,
+                            gradient: 'linear-gradient(135deg, #f59e0b, #eab308)',
+                          },
+                          'TARGET PROFILE': {
+                            color: '#3b82f6',
+                            icon: <FingerprintIcon sx={{ fontSize: 18 }} />,
+                            gradient: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                          },
+                          'IMPACT ASSESSMENT': {
+                            color: '#ef4444',
+                            icon: <BugReportIcon sx={{ fontSize: 18 }} />,
+                            gradient: 'linear-gradient(135deg, #ef4444, #ec4899)',
+                          },
+                          'RECOMMENDED ACTIONS': {
+                            color: '#10b981',
+                            icon: <SecurityIcon sx={{ fontSize: 18 }} />,
+                            gradient: 'linear-gradient(135deg, #10b981, #06b6d4)',
+                          },
+                        };
+                        return (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {sections.filter(s => s.trim()).map((section, idx) => {
+                              const lines = section.split('\n');
+                              const header = lines[0].trim();
+                              const body = lines.slice(1).join('\n').trim();
+                              const meta = sectionMeta[header] || {
+                                color: theme.palette.primary.main,
+                                icon: <SecurityIcon sx={{ fontSize: 18 }} />,
+                                gradient: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                              };
+                              return (
+                                <Box
+                                  key={idx}
+                                  sx={{
+                                    position: 'relative',
+                                    borderRadius: '14px',
+                                    border: `1px solid ${alpha(meta.color, 0.15)}`,
+                                    backgroundColor: alpha(meta.color, 0.03),
+                                    overflow: 'hidden',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    '&:hover': {
+                                      borderColor: alpha(meta.color, 0.3),
+                                      backgroundColor: alpha(meta.color, 0.05),
+                                      transform: 'translateY(-1px)',
+                                      boxShadow: `0 4px 20px ${alpha(meta.color, 0.1)}`,
+                                    },
+                                  }}
+                                >
+                                  {/* Top accent line */}
+                                  <Box sx={{
+                                    position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+                                    background: meta.gradient, opacity: 0.8,
+                                  }} />
+                                  <Box sx={{ p: 2.5, pt: 3 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                                      <Box sx={{
+                                        width: 32, height: 32, borderRadius: '10px',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        background: meta.gradient, color: '#fff',
+                                        boxShadow: `0 2px 8px ${alpha(meta.color, 0.3)}`,
+                                      }}>
+                                        {meta.icon}
+                                      </Box>
+                                      <Typography variant="subtitle2" sx={{
+                                        fontWeight: 700, fontSize: '0.75rem',
+                                        letterSpacing: '0.06em', textTransform: 'uppercase',
+                                        color: meta.color,
+                                      }}>
+                                        {header}
+                                      </Typography>
+                                      <Box sx={{ flex: 1 }} />
+                                      <Chip
+                                        label={`${idx + 1}/${sections.filter(s => s.trim()).length}`}
+                                        size="small"
+                                        sx={{
+                                          fontFamily: '"JetBrains Mono", monospace',
+                                          fontSize: '0.6rem', fontWeight: 700, height: 20,
+                                          backgroundColor: alpha(meta.color, 0.08),
+                                          color: alpha(meta.color, 0.7),
+                                          borderRadius: '6px',
+                                        }}
+                                      />
+                                    </Box>
+                                    <Typography variant="body2" sx={{
+                                      whiteSpace: 'pre-wrap', lineHeight: 1.85,
+                                      color: 'text.secondary', pl: 0.5,
+                                      fontSize: '0.84rem',
+                                    }}>
+                                      {body}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        );
+                      })()}
+                    </Box>
 
                     {/* ── Indicators of Compromise ── */}
                     {report.analysis_data?.indicators_of_compromise && (
@@ -341,28 +471,119 @@ const Reports: React.FC = () => {
                         <SectionHeader icon="ioc" label="Indicators of Compromise" />
                         {Object.entries(report.analysis_data.indicators_of_compromise).map(([key, value]) =>
                           Array.isArray(value) && value.length > 0 && (
-                            <Box key={key} sx={{ mb: 2, pl: 1 }}>
+                            <Box key={key} sx={{ mb: 2.5 }}>
                               <Typography variant="caption" sx={{
                                 color: 'text.secondary', textTransform: 'uppercase',
                                 letterSpacing: '0.08em', fontSize: '0.65rem', fontWeight: 600,
+                                display: 'flex', alignItems: 'center', gap: 1, mb: 0.8,
                               }}>
                                 {key.replace(/_/g, ' ')}
+                                <Chip
+                                  label={value.length}
+                                  size="small"
+                                  sx={{
+                                    fontFamily: '"JetBrains Mono", monospace',
+                                    fontSize: '0.6rem', fontWeight: 700,
+                                    height: 16, minWidth: 16, borderRadius: '8px',
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                    color: alpha(theme.palette.primary.main, 0.8),
+                                  }}
+                                />
                               </Typography>
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mt: 0.8 }}>
-                                {value.map((item, i) => (
-                                  <Tooltip key={i} title={item} arrow>
-                                    <Chip label={item} size="small" sx={{
-                                      fontFamily: '"JetBrains Mono", monospace', fontSize: '0.7rem',
-                                      borderRadius: '8px', height: 26, maxWidth: '340px',
-                                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                                      border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-                                      '& .MuiChip-label': {
-                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                      },
-                                      '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.15) },
-                                    }} />
-                                  </Tooltip>
-                                ))}
+                              {/* Terminal-style IoC list */}
+                              <Box
+                                sx={{
+                                  backgroundColor: isDark ? alpha('#000', 0.5) : alpha('#0f172a', 0.04),
+                                  borderRadius: '10px',
+                                  border: `1px solid ${alpha(
+                                    key.includes('hash') || key.includes('md5') || key.includes('sha') ? theme.palette.secondary.main
+                                    : key.includes('ip') ? '#f59e0b'
+                                    : key.includes('domain') ? '#10b981'
+                                    : key.includes('url') ? '#3b82f6'
+                                    : theme.palette.primary.main, 0.2)}`,
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                {value.map((item, i) => {
+                                  const isIp = key.includes('ip');
+                                  const isDomain = key.includes('domain');
+                                  const isHash = key.includes('hash') || key.includes('md5') || key.includes('sha');
+                                  const isUrl = key.includes('url');
+                                  const accentColor = isHash ? theme.palette.secondary.main : isIp ? '#f59e0b' : isDomain ? '#10b981' : isUrl ? '#3b82f6' : theme.palette.primary.main;
+                                  const typeLabel = isHash ? 'HASH' : isIp ? 'IP' : isDomain ? 'DNS' : isUrl ? 'URL' : 'IOC';
+                                  return (
+                                    <Box
+                                      key={i}
+                                      onClick={() => navigator.clipboard.writeText(item)}
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1.5,
+                                        px: 2,
+                                        py: 0.7,
+                                        cursor: 'pointer',
+                                        borderBottom: i < value.length - 1 ? `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}` : 'none',
+                                        transition: 'background 0.2s ease',
+                                        '&:hover': {
+                                          backgroundColor: alpha(accentColor, 0.08),
+                                          '& .ioc-copy-icon': { opacity: 1 },
+                                          '& .ioc-line-num': { color: accentColor },
+                                        },
+                                      }}
+                                    >
+                                      <Typography
+                                        className="ioc-line-num"
+                                        sx={{
+                                          fontFamily: '"JetBrains Mono", monospace',
+                                          fontSize: '0.65rem', fontWeight: 500,
+                                          color: alpha(theme.palette.text.primary, 0.2),
+                                          minWidth: 18, textAlign: 'right',
+                                          userSelect: 'none',
+                                          transition: 'color 0.2s ease',
+                                        }}
+                                      >
+                                        {i + 1}
+                                      </Typography>
+                                      <Box
+                                        sx={{
+                                          fontFamily: '"JetBrains Mono", monospace',
+                                          fontSize: '0.55rem', fontWeight: 700,
+                                          letterSpacing: '0.06em',
+                                          color: accentColor,
+                                          backgroundColor: alpha(accentColor, 0.12),
+                                          borderRadius: '4px',
+                                          px: 0.7, py: 0.1,
+                                          minWidth: 30, textAlign: 'center',
+                                          flexShrink: 0, userSelect: 'none',
+                                        }}
+                                      >
+                                        {typeLabel}
+                                      </Box>
+                                      <Typography
+                                        sx={{
+                                          fontFamily: '"JetBrains Mono", monospace',
+                                          fontSize: '0.72rem', fontWeight: 500,
+                                          color: isDark ? '#e2e8f0' : '#334155',
+                                          flex: 1, minWidth: 0,
+                                          wordBreak: 'break-all',
+                                          lineHeight: 1.5,
+                                        }}
+                                      >
+                                        {item}
+                                      </Typography>
+                                      <ContentCopyIcon
+                                        className="ioc-copy-icon"
+                                        sx={{
+                                          fontSize: 13,
+                                          color: alpha(theme.palette.text.primary, 0.3),
+                                          opacity: 0,
+                                          flexShrink: 0,
+                                          transition: 'opacity 0.2s ease',
+                                        }}
+                                      />
+                                    </Box>
+                                  );
+                                })}
                               </Box>
                             </Box>
                           )
@@ -387,33 +608,20 @@ const Reports: React.FC = () => {
                       </Box>
                     )}
 
-                    {/* ── MITRE ATT&CK TTPs ── */}
-                    {report.analysis_data?.ttps && report.analysis_data.ttps.length > 0 && (
-                      <Box sx={{ mb: 4 }}>
-                        <SectionHeader icon="ttps" label="MITRE ATT&CK TTPs" />
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, pl: 1 }}>
-                          {report.analysis_data.ttps.map((ttp, i) => (
-                            <Chip key={i}
-                              label={typeof ttp === 'string' ? ttp : ttp.technique_name}
-                              sx={{
-                                borderRadius: '10px', fontWeight: 600,
-                                backgroundColor: alpha(theme.palette.warning.main, 0.1),
-                                color: theme.palette.warning.main,
-                                border: `1px solid ${alpha(theme.palette.warning.main, 0.25)}`,
-                              }}
-                            />
-                          ))}
-                        </Box>
-                      </Box>
-                    )}
-
                     {/* ── Tools & Malware ── */}
                     {report.analysis_data?.tools_or_malware && report.analysis_data.tools_or_malware.length > 0 && (
                       <Box sx={{ mb: 4 }}>
                         <SectionHeader icon="tools" label="Tools & Malware" />
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, pl: 1 }}>
-                          {report.analysis_data.tools_or_malware.map((item, i) => {
-                            const isMalware = ['malware', 'trojan', 'ransomware', 'worm', 'virus'].some(k => item.toLowerCase().includes(k));
+                          {report.analysis_data.tools_or_malware
+                            .flatMap((item: any) => {
+                              const label = typeof item === 'string' ? item : (item?.name || String(item));
+                              return label.includes('\n') ? label.split('\n').map((s: string) => s.trim()).filter(Boolean) : [label.trim()];
+                            })
+                            .filter(Boolean)
+                            .map((item: string, i: number) => {
+                            const lower = item.toLowerCase();
+                            const isMalware = ['malware', 'trojan', 'ransomware', 'worm', 'virus', 'backdoor', 'rat', 'rootkit', 'stealer', 'loader'].some(k => lower.includes(k));
                             const clr = isMalware ? theme.palette.error.main : theme.palette.info.main;
                             return (
                               <Chip key={i} label={item} sx={{
@@ -880,10 +1088,10 @@ const Reports: React.FC = () => {
                       </Box>
                     )}
 
-                    {/* ── SIEM Queries ── */}
+                    {/* ── SIEM Detection Queries ── */}
                     {report.siem_queries && (
                       <Box sx={{ mb: 4 }}>
-                        <SectionHeader icon="siem" label="Generated SIEM Queries" />
+                        <SectionHeader icon="siem" label="SIEM Detection Queries" />
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                           {Object.entries(report.siem_queries).map(([platform, query]) => {
                             const platformColors: Record<string, string> = {
@@ -918,6 +1126,77 @@ const Reports: React.FC = () => {
                                   {query.notes && (
                                     <Typography variant="caption" sx={{ mt: 1.5, display: 'block', fontStyle: 'italic', color: 'text.secondary' }}>
                                       Notes: {query.notes}
+                                    </Typography>
+                                  )}
+                                </AccordionDetails>
+                              </Accordion>
+                            );
+                          })}
+                        </Box>
+                      </Box>
+                    )}
+
+                    {/* ── Threat Hunting Queries ── */}
+                    {report.hunting_queries && Object.keys(report.hunting_queries).length > 0 && (
+                      <Box sx={{ mb: 4 }}>
+                        <SectionHeader icon="siem" label="Threat Hunting Queries" />
+                        {report.hunting_queries.hunting_hypothesis && (
+                          <Typography variant="caption" sx={{
+                            display: 'block', fontStyle: 'italic',
+                            color: 'text.secondary', mb: 2, pl: 1,
+                            borderLeft: `2px solid ${alpha(theme.palette.warning.main, 0.3)}`,
+                            paddingLeft: 1.5,
+                          }}>
+                            Hypothesis: {report.hunting_queries.hunting_hypothesis}
+                          </Typography>
+                        )}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                          {(['splunk', 'qradar', 'elastic', 'sentinel'] as const).map((platform) => {
+                            const hunt = (report.hunting_queries as any)?.[platform];
+                            if (!hunt || !hunt.query) return null;
+                            const platformColors: Record<string, string> = {
+                              splunk: '#65a637',
+                              qradar: '#6366f1',
+                              elastic: '#f59e0b',
+                              sentinel: '#0ea5e9',
+                            };
+                            const clr = platformColors[platform] || theme.palette.primary.main;
+                            return (
+                              <Accordion key={platform} sx={innerAccordionSx}>
+                                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                    <Typography variant="body2" sx={{ flexGrow: 1, fontWeight: 600, textTransform: 'capitalize' }}>
+                                      {platform} Hunting Query
+                                    </Typography>
+                                    <Chip label="HUNT" size="small" sx={{
+                                      fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6rem',
+                                      fontWeight: 700, borderRadius: '6px', height: 22,
+                                      letterSpacing: '0.08em',
+                                      backgroundColor: alpha(clr, 0.12), color: clr,
+                                      border: `1px solid ${alpha(clr, 0.3)}`,
+                                    }} />
+                                  </Box>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                  {hunt.description && (
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                      {hunt.description}
+                                    </Typography>
+                                  )}
+                                  <Box component="pre" sx={codeBlockSx}>{hunt.query}</Box>
+                                  <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
+                                    {hunt.recommended_timerange && (
+                                      <Chip label={`Timerange: ${hunt.recommended_timerange}`} size="small" variant="outlined" sx={{
+                                        fontSize: '0.65rem', height: 22,
+                                        borderColor: alpha(clr, 0.3),
+                                      }} />
+                                    )}
+                                  </Box>
+                                  {hunt.expected_results && (
+                                    <Typography variant="caption" sx={{
+                                      mt: 1.5, display: 'block', fontStyle: 'italic', color: 'text.secondary',
+                                    }}>
+                                      Expected Results: {hunt.expected_results}
                                     </Typography>
                                   )}
                                 </AccordionDetails>

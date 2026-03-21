@@ -202,7 +202,8 @@ const Dashboard: React.FC = () => {
     '&:before': { display: 'none' },
     border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
     borderRadius: '12px !important',
-    overflow: 'hidden',
+    overflow: 'hidden' as const,
+    '& .MuiAccordionDetails-root': { overflow: 'auto', maxWidth: '100%' },
     transition: `all 0.35s ${EASING}`,
     '&:hover': {
       border: `1px solid ${alpha(PRIMARY, 0.3)}`,
@@ -219,6 +220,7 @@ const Dashboard: React.FC = () => {
 
   const codeBlock = {
     whiteSpace: 'pre-wrap' as const,
+    wordBreak: 'break-word' as const,
     fontFamily: CODE_FONT,
     fontSize: '0.82rem',
     lineHeight: 1.7,
@@ -229,6 +231,8 @@ const Dashboard: React.FC = () => {
     border: `1px solid ${alpha(PRIMARY, 0.15)}`,
     boxShadow: `inset 0 1px 4px ${alpha('#000', 0.3)}`,
     overflow: 'auto',
+    maxWidth: '100%',
+    maxHeight: '400px',
     '&::-webkit-scrollbar': {
       width: 6,
       height: 6,
@@ -286,16 +290,16 @@ const Dashboard: React.FC = () => {
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: 'auto', overflow: 'hidden' }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: 'auto', overflowX: 'hidden', scrollBehavior: 'smooth' }}>
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
       <Fade in={showAnimation} timeout={800}>
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
             <Box
               sx={{
-                width: 56,
-                height: 56,
-                borderRadius: '16px',
+                width: 64,
+                height: 64,
+                borderRadius: '18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -409,9 +413,9 @@ const Dashboard: React.FC = () => {
                   top: 0,
                   left: 0,
                   right: 0,
-                  height: '3px',
-                  background: `linear-gradient(90deg, ${PRIMARY}, ${SECONDARY}, ${PRIMARY})`,
-                  backgroundSize: '200% 100%',
+                  height: '4px',
+                  background: `linear-gradient(90deg, ${PRIMARY}, ${SECONDARY}, #06b6d4, ${PRIMARY})`,
+                  backgroundSize: '300% 100%',
                   animation: 'shimmer-border 3s ease infinite',
                   '@keyframes shimmer-border': {
                     '0%': { backgroundPosition: '0% 0%' },
@@ -761,7 +765,13 @@ const Dashboard: React.FC = () => {
                     ...glassCard,
                     mb: 3,
                     overflow: 'visible',
+                    border: `1px solid ${alpha(PRIMARY, 0.15)}`,
                     boxShadow: `0 4px 32px ${alpha(PRIMARY, 0.06)}`,
+                    transition: `all 0.4s ${EASING}`,
+                    '&:hover': {
+                      borderColor: alpha(PRIMARY, 0.25),
+                      boxShadow: `0 8px 40px ${alpha(PRIMARY, 0.12)}, 0 0 20px ${alpha(PRIMARY, 0.06)}`,
+                    },
                   }}
                 >
                   <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
@@ -769,21 +779,135 @@ const Dashboard: React.FC = () => {
                     {/* ── Threat Summary ───────────────────────────────────────── */}
                     <Box sx={{ mb: 4 }}>
                       {sectionHeader(<SecurityIcon sx={{ fontSize: 22, color: PRIMARY }} />, 'Threat Summary')}
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          whiteSpace: 'pre-wrap',
-                          lineHeight: 1.9,
-                          color: theme.palette.text.secondary,
-                          fontFamily: '"Inter", sans-serif',
-                          mt: 2,
-                          pl: 1,
-                          borderLeft: `3px solid ${alpha(PRIMARY, 0.2)}`,
-                          paddingLeft: 2,
-                        }}
-                      >
-                        {analysisResult.threat_summary}
-                      </Typography>
+                      <Box sx={{ mt: 2 }}>
+                        {(() => {
+                          const text = analysisResult.threat_summary || '';
+                          const sections = text.split(/━━━\s*/);
+                          if (sections.length <= 1) {
+                            return (
+                              <Typography variant="body1" sx={{
+                                whiteSpace: 'pre-wrap', lineHeight: 1.9,
+                                color: theme.palette.text.secondary,
+                                fontFamily: '"Inter", sans-serif',
+                                pl: 1, borderLeft: `3px solid ${alpha(PRIMARY, 0.2)}`, paddingLeft: 2,
+                              }}>
+                                {text}
+                              </Typography>
+                            );
+                          }
+                          const sectionMeta: Record<string, { color: string; icon: React.ReactNode; gradient: string }> = {
+                            'THREAT OVERVIEW': {
+                              color: '#ef4444',
+                              icon: <ShieldIcon sx={{ fontSize: 20 }} />,
+                              gradient: 'linear-gradient(135deg, #ef4444, #f97316)',
+                            },
+                            'ATTACK NARRATIVE': {
+                              color: '#f59e0b',
+                              icon: <WarningAmberIcon sx={{ fontSize: 20 }} />,
+                              gradient: 'linear-gradient(135deg, #f59e0b, #eab308)',
+                            },
+                            'TARGET PROFILE': {
+                              color: '#3b82f6',
+                              icon: <FingerprintIcon sx={{ fontSize: 20 }} />,
+                              gradient: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                            },
+                            'IMPACT ASSESSMENT': {
+                              color: '#ef4444',
+                              icon: <BugReportIcon sx={{ fontSize: 20 }} />,
+                              gradient: 'linear-gradient(135deg, #ef4444, #ec4899)',
+                            },
+                            'RECOMMENDED ACTIONS': {
+                              color: '#10b981',
+                              icon: <SecurityIcon sx={{ fontSize: 20 }} />,
+                              gradient: 'linear-gradient(135deg, #10b981, #06b6d4)',
+                            },
+                          };
+                          return (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              {sections.filter(s => s.trim()).map((section, idx) => {
+                                const lines = section.split('\n');
+                                const header = lines[0].trim();
+                                const body = lines.slice(1).join('\n').trim();
+                                const meta = sectionMeta[header] || {
+                                  color: PRIMARY,
+                                  icon: <SecurityIcon sx={{ fontSize: 20 }} />,
+                                  gradient: `linear-gradient(135deg, ${PRIMARY}, ${SECONDARY})`,
+                                };
+                                return (
+                                  <Box
+                                    key={idx}
+                                    sx={{
+                                      position: 'relative',
+                                      borderRadius: '16px',
+                                      border: `1px solid ${alpha(meta.color, 0.15)}`,
+                                      backgroundColor: alpha(meta.color, 0.03),
+                                      overflow: 'hidden',
+                                      transition: `all 0.35s ${EASING}`,
+                                      animation: `reportsFadeSlideUp 0.5s ease-out ${idx * 0.08}s both`,
+                                      '@keyframes reportsFadeSlideUp': {
+                                        from: { opacity: 0, transform: 'translateY(12px)' },
+                                        to: { opacity: 1, transform: 'translateY(0)' },
+                                      },
+                                      '&:hover': {
+                                        borderColor: alpha(meta.color, 0.3),
+                                        backgroundColor: alpha(meta.color, 0.05),
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: `0 8px 32px ${alpha(meta.color, 0.12)}`,
+                                      },
+                                    }}
+                                  >
+                                    {/* Top accent line */}
+                                    <Box sx={{
+                                      position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+                                      background: meta.gradient, opacity: 0.9,
+                                    }} />
+                                    <Box sx={{ p: 3, pt: 3.5 }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                                        <Box sx={{
+                                          width: 36, height: 36, borderRadius: '12px',
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          background: meta.gradient, color: '#fff',
+                                          boxShadow: `0 4px 12px ${alpha(meta.color, 0.35)}`,
+                                        }}>
+                                          {meta.icon}
+                                        </Box>
+                                        <Typography variant="subtitle2" sx={{
+                                          fontFamily: '"Inter", sans-serif',
+                                          fontWeight: 700, fontSize: '0.8rem',
+                                          letterSpacing: '0.06em', textTransform: 'uppercase',
+                                          color: meta.color,
+                                        }}>
+                                          {header}
+                                        </Typography>
+                                        <Box sx={{ flex: 1 }} />
+                                        <Chip
+                                          label={`${idx + 1}/${sections.filter(s => s.trim()).length}`}
+                                          size="small"
+                                          sx={{
+                                            fontFamily: CODE_FONT,
+                                            fontSize: '0.62rem', fontWeight: 700, height: 22,
+                                            backgroundColor: alpha(meta.color, 0.08),
+                                            color: alpha(meta.color, 0.7),
+                                            borderRadius: '8px',
+                                          }}
+                                        />
+                                      </Box>
+                                      <Typography variant="body1" sx={{
+                                        whiteSpace: 'pre-wrap', lineHeight: 1.9,
+                                        color: theme.palette.text.secondary,
+                                        fontFamily: '"Inter", sans-serif',
+                                        pl: 0.5, fontSize: '0.88rem',
+                                      }}>
+                                        {body}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+                          );
+                        })()}
+                      </Box>
                     </Box>
 
                     {/* ── Indicators of Compromise ─────────────────────────────── */}
@@ -804,45 +928,134 @@ const Dashboard: React.FC = () => {
                                     letterSpacing: '0.08em',
                                     textTransform: 'uppercase',
                                     mb: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
                                   }}
                                 >
                                   {key.replace(/_/g, ' ')}
+                                  <Chip
+                                    label={value.length}
+                                    size="small"
+                                    sx={{
+                                      fontFamily: CODE_FONT,
+                                      fontSize: '0.65rem',
+                                      fontWeight: 700,
+                                      height: 18,
+                                      minWidth: 18,
+                                      borderRadius: '9px',
+                                      backgroundColor: alpha(PRIMARY, 0.1),
+                                      color: alpha(PRIMARY, 0.8),
+                                    }}
+                                  />
                                 </Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+                                {/* Terminal-style IoC list */}
+                                <Box
+                                  sx={{
+                                    backgroundColor: alpha('#0d1117', 0.92),
+                                    borderRadius: '10px',
+                                    border: `1px solid ${alpha(
+                                      key.includes('hash') || key.includes('md5') || key.includes('sha') ? SECONDARY
+                                      : key.includes('ip') ? '#f59e0b'
+                                      : key.includes('domain') ? '#10b981'
+                                      : key.includes('url') ? '#3b82f6'
+                                      : PRIMARY, 0.2)}`,
+                                    overflow: 'hidden',
+                                    boxShadow: `inset 0 1px 4px ${alpha('#000', 0.25)}`,
+                                  }}
+                                >
                                   {value.map((item, index) => {
                                     const isIp = key.includes('ip');
                                     const isDomain = key.includes('domain');
                                     const isHash = key.includes('hash') || key.includes('md5') || key.includes('sha');
                                     const isUrl = key.includes('url');
-                                    const chipColor = isHash ? SECONDARY : isIp ? '#f59e0b' : isDomain ? '#10b981' : isUrl ? '#3b82f6' : PRIMARY;
+                                    const accentColor = isHash ? SECONDARY : isIp ? '#f59e0b' : isDomain ? '#10b981' : isUrl ? '#3b82f6' : PRIMARY;
+                                    const typeLabel = isHash ? 'HASH' : isIp ? 'IP' : isDomain ? 'DNS' : isUrl ? 'URL' : 'IOC';
                                     return (
-                                      <Tooltip key={index} title={item} arrow>
-                                        <Chip
-                                          label={item}
-                                          size="small"
+                                      <Box
+                                        key={index}
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(item);
+                                        }}
+                                        sx={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 1.5,
+                                          px: 2,
+                                          py: 0.8,
+                                          cursor: 'pointer',
+                                          borderBottom: index < value.length - 1 ? `1px solid ${alpha('#fff', 0.04)}` : 'none',
+                                          transition: `all 0.2s ${EASING}`,
+                                          '&:hover': {
+                                            backgroundColor: alpha(accentColor, 0.08),
+                                            '& .ioc-copy-icon': { opacity: 1 },
+                                            '& .ioc-line-num': { color: accentColor },
+                                          },
+                                        }}
+                                      >
+                                        {/* Line number */}
+                                        <Typography
+                                          className="ioc-line-num"
+                                          sx={{
+                                            fontFamily: CODE_FONT,
+                                            fontSize: '0.68rem',
+                                            fontWeight: 500,
+                                            color: alpha('#e6edf3', 0.25),
+                                            minWidth: 20,
+                                            textAlign: 'right',
+                                            userSelect: 'none',
+                                            transition: `color 0.2s ${EASING}`,
+                                          }}
+                                        >
+                                          {index + 1}
+                                        </Typography>
+                                        {/* Type badge */}
+                                        <Box
+                                          sx={{
+                                            fontFamily: CODE_FONT,
+                                            fontSize: '0.58rem',
+                                            fontWeight: 700,
+                                            letterSpacing: '0.06em',
+                                            color: accentColor,
+                                            backgroundColor: alpha(accentColor, 0.12),
+                                            borderRadius: '4px',
+                                            px: 0.8,
+                                            py: 0.15,
+                                            minWidth: 32,
+                                            textAlign: 'center',
+                                            flexShrink: 0,
+                                            userSelect: 'none',
+                                          }}
+                                        >
+                                          {typeLabel}
+                                        </Box>
+                                        {/* Value — full display with word-break */}
+                                        <Typography
                                           sx={{
                                             fontFamily: CODE_FONT,
                                             fontSize: '0.78rem',
                                             fontWeight: 500,
-                                            borderRadius: '8px',
-                                            maxWidth: '340px',
-                                            backgroundColor: alpha(chipColor, 0.1),
-                                            color: chipColor,
-                                            border: `1px solid ${alpha(chipColor, 0.2)}`,
-                                            transition: `all 0.25s ${EASING}`,
-                                            '& .MuiChip-label': {
-                                              overflow: 'hidden',
-                                              textOverflow: 'ellipsis',
-                                              whiteSpace: 'nowrap',
-                                            },
-                                            '&:hover': {
-                                              backgroundColor: alpha(chipColor, 0.18),
-                                              boxShadow: `0 0 12px ${alpha(chipColor, 0.2)}`,
-                                              transform: 'translateY(-1px)',
-                                            },
+                                            color: '#e6edf3',
+                                            flex: 1,
+                                            minWidth: 0,
+                                            wordBreak: 'break-all',
+                                            lineHeight: 1.5,
+                                          }}
+                                        >
+                                          {item}
+                                        </Typography>
+                                        {/* Copy icon */}
+                                        <ContentCopyIcon
+                                          className="ioc-copy-icon"
+                                          sx={{
+                                            fontSize: 14,
+                                            color: alpha('#e6edf3', 0.4),
+                                            opacity: 0,
+                                            flexShrink: 0,
+                                            transition: `opacity 0.2s ${EASING}`,
                                           }}
                                         />
-                                      </Tooltip>
+                                      </Box>
                                     );
                                   })}
                                 </Box>
@@ -883,36 +1096,7 @@ const Dashboard: React.FC = () => {
                       </Box>
                     )}
 
-                    {/* ── MITRE ATT&CK TTPs ────────────────────────────────────── */}
-                    {analysisResult.analysis_data?.ttps && analysisResult.analysis_data.ttps.length > 0 && (
-                      <Box sx={{ mb: 4 }}>
-                        {sectionHeader(<GpsFixedIcon sx={{ fontSize: 22, color: PRIMARY }} />, 'MITRE ATT&CK TTPs')}
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                          {analysisResult.analysis_data.ttps.map((ttp, index) => (
-                            <Chip
-                              key={index}
-                              label={typeof ttp === 'string' ? ttp : ttp.technique_name}
-                              sx={{
-                                fontFamily: '"Inter", sans-serif',
-                                fontWeight: 600,
-                                fontSize: '0.82rem',
-                                borderRadius: '10px',
-                                backgroundColor: alpha('#f59e0b', 0.1),
-                                color: '#f59e0b',
-                                border: `1px solid ${alpha('#f59e0b', 0.25)}`,
-                                transition: `all 0.25s ${EASING}`,
-                                '&:hover': {
-                                  backgroundColor: alpha('#f59e0b', 0.18),
-                                  boxShadow: `0 0 12px ${alpha('#f59e0b', 0.2)}`,
-                                },
-                              }}
-                            />
-                          ))}
-                        </Box>
-                      </Box>
-                    )}
-
-                    {/* ── MITRE Navigator ───────────────────────────────────────── */}
+                    {/* ── MITRE ATT&CK Mapping (unified — TTPs merged into Navigator) ── */}
                     {analysisResult.mitre_mapping?.techniques && analysisResult.mitre_mapping.techniques.length > 0 && (
                       <Box sx={{ mb: 4 }}>
                         <MitreNavigator
@@ -928,30 +1112,39 @@ const Dashboard: React.FC = () => {
                       <Box sx={{ mb: 4 }}>
                         {sectionHeader(<BugReportIcon sx={{ fontSize: 22, color: PRIMARY }} />, 'Tools & Malware')}
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                          {analysisResult.analysis_data.tools_or_malware.map((item, index) => {
-                            const isMalware = ['malware', 'trojan', 'ransomware', 'worm', 'virus'].some(k => item.toLowerCase().includes(k));
-                            const chipColor = isMalware ? theme.palette.error.main : '#3b82f6';
-                            return (
-                              <Chip
-                                key={index}
-                                label={item}
-                                sx={{
-                                  fontFamily: '"Inter", sans-serif',
-                                  fontWeight: 600,
-                                  fontSize: '0.82rem',
-                                  borderRadius: '10px',
-                                  backgroundColor: alpha(chipColor, 0.1),
-                                  color: chipColor,
-                                  border: `1px solid ${alpha(chipColor, 0.25)}`,
-                                  transition: `all 0.25s ${EASING}`,
-                                  '&:hover': {
-                                    backgroundColor: alpha(chipColor, 0.18),
-                                    boxShadow: `0 0 12px ${alpha(chipColor, 0.2)}`,
-                                  },
-                                }}
-                              />
-                            );
-                          })}
+                          {analysisResult.analysis_data.tools_or_malware
+                            .flatMap((item: any) => {
+                              // Handle string items that contain newlines (split into separate items)
+                              const label = typeof item === 'string' ? item : (item?.name || String(item));
+                              return label.includes('\n') ? label.split('\n').map((s: string) => s.trim()).filter(Boolean) : [label.trim()];
+                            })
+                            .filter(Boolean)
+                            .map((item: string, index: number) => {
+                              const lower = item.toLowerCase();
+                              const isMalware = ['malware', 'trojan', 'ransomware', 'worm', 'virus', 'backdoor', 'rat', 'rootkit', 'stealer', 'loader'].some(k => lower.includes(k));
+                              const isTool = ['impacket', 'mimikatz', 'cobalt', 'metasploit', 'psexec', 'scanner', 'nbtscan', 'nmap'].some(k => lower.includes(k));
+                              const chipColor = isMalware ? theme.palette.error.main : isTool ? '#f59e0b' : '#3b82f6';
+                              return (
+                                <Chip
+                                  key={index}
+                                  label={item}
+                                  sx={{
+                                    fontFamily: '"Inter", sans-serif',
+                                    fontWeight: 600,
+                                    fontSize: '0.82rem',
+                                    borderRadius: '10px',
+                                    backgroundColor: alpha(chipColor, 0.1),
+                                    color: chipColor,
+                                    border: `1px solid ${alpha(chipColor, 0.25)}`,
+                                    transition: `all 0.25s ${EASING}`,
+                                    '&:hover': {
+                                      backgroundColor: alpha(chipColor, 0.18),
+                                      boxShadow: `0 0 12px ${alpha(chipColor, 0.2)}`,
+                                    },
+                                  }}
+                                />
+                              );
+                            })}
                         </Box>
                       </Box>
                     )}
@@ -1018,6 +1211,55 @@ const Dashboard: React.FC = () => {
                         </Box>
                       </Box>
                     )}
+
+                    {/* ── IoC-Based Sigma Rules ────────────────────────────── */}
+                    {analysisResult.generated_sigma_rules && (() => {
+                      const iocRules = analysisResult.generated_sigma_rules.split('---').filter((rule) => {
+                        if (!rule.trim()) return false;
+                        const t = rule.match(/title:\s*(.+)/);
+                        return t && t[1].trim().startsWith('PERSEPTOR - Suspicious');
+                      });
+                      if (iocRules.length === 0) return null;
+                      return (
+                        <Box sx={{ mb: 4 }}>
+                          {sectionHeader(<FingerprintIcon sx={{ fontSize: 22, color: PRIMARY }} />, 'IoC-Based Sigma Rules')}
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                            {iocRules.map((rule, index) => {
+                              const titleMatch = rule.match(/title:\s*(.+)/);
+                              const levelMatch = rule.match(/level:\s*(.+)/);
+                              const level = levelMatch ? levelMatch[1].trim() : '';
+                              const levelColor = level === 'critical' ? theme.palette.error.main : level === 'high' ? '#f59e0b' : '#3b82f6';
+                              return (
+                                <Accordion key={index} sx={premiumAccordion}>
+                                  <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: alpha(PRIMARY, 0.6) }} />}>
+                                    <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                      <FingerprintIcon sx={{ fontSize: 16, color: PRIMARY, flexShrink: 0 }} />
+                                      <Typography variant="subtitle1" sx={{
+                                        flex: '1 1 0', minWidth: 0, fontWeight: 700, fontFamily: '"Inter", sans-serif',
+                                        letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                      }}>
+                                        {titleMatch ? titleMatch[1].trim() : `IoC Rule ${index + 1}`}
+                                      </Typography>
+                                      {level && (
+                                        <Chip label={level} size="small" sx={{
+                                          fontFamily: '"Inter", sans-serif', fontWeight: 700, fontSize: '0.68rem',
+                                          borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.05em',
+                                          backgroundColor: alpha(levelColor, 0.1), color: levelColor,
+                                          border: `1px solid ${alpha(levelColor, 0.25)}`,
+                                        }} />
+                                      )}
+                                    </Box>
+                                  </AccordionSummary>
+                                  <AccordionDetails sx={{ pt: 0 }}>
+                                    <Box component="pre" sx={codeBlock}>{rule.trim()}</Box>
+                                  </AccordionDetails>
+                                </Accordion>
+                              );
+                            })}
+                          </Box>
+                        </Box>
+                      );
+                    })()}
 
                     {/* ── Atomic Red Team Test Scenarios ──────────────────────── */}
                     {analysisResult.atomic_tests && analysisResult.atomic_tests.length > 0 && (
@@ -1372,10 +1614,10 @@ const Dashboard: React.FC = () => {
                       </Box>
                     )}
 
-                    {/* ── SIEM Queries ──────────────────────────────────────────── */}
+                    {/* ── SIEM Detection Queries ────────────────────────────────── */}
                     {analysisResult.siem_queries && (
                       <Box sx={{ mb: 4 }}>
-                        {sectionHeader(<StorageIcon sx={{ fontSize: 22, color: PRIMARY }} />, 'Generated SIEM Queries')}
+                        {sectionHeader(<StorageIcon sx={{ fontSize: 22, color: PRIMARY }} />, 'SIEM Detection Queries')}
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
                           {Object.entries(analysisResult.siem_queries).map(([platform, query]) => {
                             const platformColors: Record<string, string> = {
@@ -1446,6 +1688,96 @@ const Dashboard: React.FC = () => {
                                       }}
                                     >
                                       Notes: {query.notes}
+                                    </Typography>
+                                  )}
+                                </AccordionDetails>
+                              </Accordion>
+                            );
+                          })}
+                        </Box>
+                      </Box>
+                    )}
+
+                    {/* ── Threat Hunting Queries ─────────────────────────────────── */}
+                    {analysisResult.hunting_queries && Object.keys(analysisResult.hunting_queries).length > 0 && (
+                      <Box sx={{ mb: 4 }}>
+                        {sectionHeader(<GpsFixedIcon sx={{ fontSize: 22, color: PRIMARY }} />, 'Threat Hunting Queries')}
+                        {analysisResult.hunting_queries.hunting_hypothesis && (
+                          <Typography variant="body2" sx={{
+                            color: alpha(theme.palette.text.primary, 0.7),
+                            fontFamily: '"Inter", sans-serif',
+                            fontStyle: 'italic',
+                            mt: 1.5, mb: 2, pl: 1,
+                            borderLeft: `3px solid ${alpha('#f59e0b', 0.3)}`,
+                            paddingLeft: 2,
+                          }}>
+                            Hunting Hypothesis: {analysisResult.hunting_queries.hunting_hypothesis}
+                          </Typography>
+                        )}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                          {(['splunk', 'qradar', 'elastic', 'sentinel'] as const).map((platform) => {
+                            const hunt = (analysisResult.hunting_queries as any)?.[platform];
+                            if (!hunt || !hunt.query) return null;
+                            const platformColors: Record<string, string> = {
+                              splunk: PRIMARY,
+                              qradar: SECONDARY,
+                              elastic: '#10b981',
+                              sentinel: '#f59e0b',
+                            };
+                            const pColor = platformColors[platform] || '#6b7280';
+                            return (
+                              <Accordion key={platform} sx={premiumAccordion}>
+                                <AccordionSummary
+                                  expandIcon={<ExpandMoreIcon sx={{ color: alpha(PRIMARY, 0.6) }} />}
+                                >
+                                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                    <Typography variant="subtitle1" sx={{
+                                      flexGrow: 1, textTransform: 'capitalize',
+                                      fontWeight: 600, fontFamily: '"Inter", sans-serif',
+                                    }}>
+                                      {platform} Hunting Query
+                                    </Typography>
+                                    <Chip label={platform} size="small" sx={{
+                                      fontFamily: '"Inter", sans-serif', fontWeight: 700,
+                                      fontSize: '0.72rem', borderRadius: '6px',
+                                      textTransform: 'uppercase', letterSpacing: '0.05em',
+                                      backgroundColor: alpha(pColor, 0.12), color: pColor,
+                                      border: `1px solid ${alpha(pColor, 0.25)}`,
+                                    }} />
+                                    <Chip label="HUNT" size="small" sx={{
+                                      fontFamily: '"Inter", sans-serif', fontWeight: 700,
+                                      fontSize: '0.65rem', borderRadius: '6px',
+                                      letterSpacing: '0.08em',
+                                      backgroundColor: alpha('#f59e0b', 0.12), color: '#f59e0b',
+                                      border: `1px solid ${alpha('#f59e0b', 0.25)}`,
+                                    }} />
+                                  </Box>
+                                </AccordionSummary>
+                                <AccordionDetails sx={{ pt: 0 }}>
+                                  <Typography variant="body2" sx={{
+                                    color: theme.palette.text.secondary,
+                                    fontFamily: '"Inter", sans-serif', mb: 2, lineHeight: 1.7,
+                                  }}>
+                                    {hunt.description}
+                                  </Typography>
+                                  <Box component="pre" sx={codeBlock}>
+                                    {hunt.query}
+                                  </Box>
+                                  <Box sx={{ display: 'flex', gap: 2, mt: 1.5, flexWrap: 'wrap' }}>
+                                    {hunt.recommended_timerange && (
+                                      <Chip label={`Timerange: ${hunt.recommended_timerange}`} size="small" variant="outlined" sx={{
+                                        fontFamily: '"Inter", sans-serif', fontSize: '0.72rem',
+                                        borderColor: alpha(pColor, 0.3), color: alpha(theme.palette.text.secondary, 0.8),
+                                      }} />
+                                    )}
+                                  </Box>
+                                  {hunt.expected_results && (
+                                    <Typography variant="caption" sx={{
+                                      display: 'block', mt: 1.5,
+                                      color: alpha(theme.palette.text.secondary, 0.7),
+                                      fontFamily: '"Inter", sans-serif', fontStyle: 'italic',
+                                    }}>
+                                      Expected Results: {hunt.expected_results}
                                     </Typography>
                                   )}
                                 </AccordionDetails>
@@ -1656,7 +1988,7 @@ const Dashboard: React.FC = () => {
         </Box>
 
         {/* ── Right Column (Info Panel) ─────────────────────────────────────── */}
-        <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 33%' } }}>
+        <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 33%' }, position: 'sticky' as const, top: 24, alignSelf: 'flex-start' }}>
           <Zoom in={showAnimation} timeout={1000} style={{ transitionDelay: '400ms' }}>
             <Card
               elevation={0}
@@ -1798,6 +2130,7 @@ const Dashboard: React.FC = () => {
                 >
                   <Typography
                     variant="body2"
+                    component="div"
                     sx={{
                       color: '#10b981',
                       fontWeight: 700,

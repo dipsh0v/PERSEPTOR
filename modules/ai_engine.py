@@ -19,6 +19,9 @@ from modules.logging_config import get_logger
 
 logger = get_logger("ai_engine")
 
+# Prompt version — increment when prompts change to invalidate cached results
+PROMPT_VERSION = "v2.1"
+
 
 ################################################################################
 # Token Usage Tracking
@@ -59,22 +62,40 @@ def safe_json_parse(json_str: str) -> dict:
 def extract_json_from_response(text: str) -> str:
     """Extract JSON from an AI response that may contain markdown code blocks."""
     text = text.strip()
-    if "```json" in text:
-        start = text.find("```json") + 7
+
+    # Handle ```json or ```JSON (case-insensitive) with optional whitespace
+    fence_match = re.search(r'```\s*[jJ][sS][oO][nN]\s*\n', text)
+    if fence_match:
+        start = fence_match.end()
         end = text.find("```", start)
         if end != -1:
             return text[start:end].strip()
         return text[start:].strip()
+
+    # Handle generic ``` code blocks
     if "```" in text:
         start = text.find("```") + 3
+        # Skip language identifier on the same line (e.g., ```python)
+        newline_pos = text.find("\n", start)
+        if newline_pos != -1 and newline_pos - start < 20:
+            start = newline_pos + 1
         end = text.find("```", start)
         if end != -1:
             return text[start:end].strip()
         return text[start:].strip()
+
+    # Try to find JSON object
     json_start = text.find("{")
     json_end = text.rfind("}") + 1
     if json_start != -1 and json_end > json_start:
         return text[json_start:json_end]
+
+    # Try to find JSON array
+    arr_start = text.find("[")
+    arr_end = text.rfind("]") + 1
+    if arr_start != -1 and arr_end > arr_start:
+        return text[arr_start:arr_end]
+
     return text
 
 
@@ -123,7 +144,7 @@ def summarize_threat_report(
     """Summarize threat report using Chain-of-Thought prompting."""
     try:
         cache = get_cache()
-        cache_key = ResponseCache._make_key("summarize", text[:500], provider_name, model_name)
+        cache_key = ResponseCache._make_key("summarize", PROMPT_VERSION, text[:500], provider_name, model_name)
         cached = cache.get(cache_key)
         if cached:
             logger.info("Returning cached threat summary")
@@ -169,7 +190,7 @@ def extract_iocs_ttps_gpt(
     """Extract IoCs and TTPs with CoT prompting and output validation."""
     try:
         cache = get_cache()
-        cache_key = ResponseCache._make_key("ioc_extract", text[:500], provider_name, model_name)
+        cache_key = ResponseCache._make_key("ioc_extract", PROMPT_VERSION, text[:500], provider_name, model_name)
         cached = cache.get(cache_key)
         if cached:
             logger.info("Returning cached IoC extraction")
@@ -179,10 +200,7 @@ def extract_iocs_ttps_gpt(
 
         messages = [
             Message(role="system", content=PromptTemplates.IOC_EXTRACTOR_SYSTEM),
-            # Few-shot example
-            Message(role="user", content="Extract IoCs from: 'APT29 used SUNBURST backdoor via trojanized SolarWinds update, C2 at avsvmcloud.com'"),
-            Message(role="assistant", content=FewShotExamples.IOC_EXTRACTION_EXAMPLE),
-            # Actual request with CoT
+            # Direct CoT extraction — no few-shot to avoid IoC contamination
             Message(role="user", content=PromptTemplates.IOC_EXTRACTION_COT.format(text=text)),
         ]
 
@@ -226,6 +244,251 @@ def extract_iocs_ttps_gpt(
             else:
                 logger.warning(f"IoC extraction returned invalid JSON. Cleaned first 300: {cleaned[:300]}")
                 result = "{}"  # Return empty JSON, not raw text
+
+        # ── Anti-hallucination: cross-check extracted data against source text ──
+        if parsed_ok:
+            try:
+                parsed_result = json.loads(result) if isinstance(result, str) else result
+                text_lower = text.lower()
+                hallucination_warnings = []
+
+                # Cross-check threat_actors FIRST (needed for tools dedup)
+                original_actors = parsed_result.get("threat_actors", [])
+                verified_actors = []
+                for actor in original_actors:
+                    actor_str = str(actor).strip()
+                    if actor_str.lower() in text_lower:
+                        verified_actors.append(actor_str)
+                    else:
+                        hallucination_warnings.append(f"threat_actor '{actor_str}' NOT in source text — removed")
+                parsed_result["threat_actors"] = verified_actors
+                actors_lower = {a.lower() for a in verified_actors}
+
+                # Cross-check tools_or_malware — each must appear in source text
+                # AND must NOT be a threat actor name (AI often confuses the two)
+                original_tools = parsed_result.get("tools_or_malware", [])
+                verified_tools = []
+                for tool in original_tools:
+                    tool_str = str(tool).strip()
+                    if tool_str.lower() in actors_lower:
+                        hallucination_warnings.append(f"tools_or_malware '{tool_str}' is a threat actor — removed")
+                        continue
+                    if tool_str.lower() in text_lower:
+                        verified_tools.append(tool_str)
+                    else:
+                        hallucination_warnings.append(f"tools_or_malware '{tool_str}' NOT in source text — removed")
+                parsed_result["tools_or_malware"] = verified_tools
+
+                # Cross-check file_hashes — each must appear in source text
+                ioc = parsed_result.get("indicators_of_compromise", {})
+                original_hashes = ioc.get("file_hashes", [])
+                verified_hashes = []
+                for h in original_hashes:
+                    h_str = str(h).strip()
+                    if h_str.lower() in text_lower:
+                        verified_hashes.append(h_str)
+                    else:
+                        hallucination_warnings.append(f"file_hash '{h_str[:20]}...' NOT in source text — removed")
+                ioc["file_hashes"] = verified_hashes
+
+                # Cross-check domains — each must appear in source text
+                original_domains = ioc.get("domains", [])
+                verified_domains = []
+                for d in original_domains:
+                    d_str = str(d).strip()
+                    if d_str.lower() in text_lower:
+                        verified_domains.append(d_str)
+                    else:
+                        hallucination_warnings.append(f"domain '{d_str}' NOT in source text — removed")
+                ioc["domains"] = verified_domains
+
+                # Cross-check IPs
+                original_ips = ioc.get("ips", [])
+                verified_ips = []
+                for ip in original_ips:
+                    ip_str = str(ip).strip()
+                    # Also check defanged versions
+                    if ip_str in text or ip_str.replace('.', '[.]') in text:
+                        verified_ips.append(ip_str)
+                    else:
+                        hallucination_warnings.append(f"ip '{ip_str}' NOT in source text — removed")
+                ioc["ips"] = verified_ips
+
+                # Cross-check URLs
+                original_urls = ioc.get("urls", [])
+                verified_urls = []
+                for u in original_urls:
+                    u_str = str(u).strip()
+                    # Check both original and defanged forms
+                    u_check = u_str.replace('http://', '').replace('https://', '').split('/')[0]
+                    if u_check.lower() in text_lower or u_str.lower() in text_lower:
+                        verified_urls.append(u_str)
+                    else:
+                        hallucination_warnings.append(f"url domain NOT in source text — removed")
+                ioc["urls"] = verified_urls
+
+                parsed_result["indicators_of_compromise"] = ioc
+
+                if hallucination_warnings:
+                    logger.warning(
+                        f"Anti-hallucination filter removed {len(hallucination_warnings)} items: "
+                        + "; ".join(hallucination_warnings[:10])
+                    )
+
+                # ── Auto-extract tools_or_malware if AI missed them ──────────
+                # Scan the source text for common malware/tool patterns
+                if not parsed_result.get("tools_or_malware"):
+                    logger.info("tools_or_malware empty — running text-based extraction fallback")
+                    # Known malware/tool naming patterns: CamelCase words, words with "Loader",
+                    # "Backdoor", "RAT", "Dropper", "Stealer" suffixes, etc.
+                    import re as _re
+                    # Extract capitalized compound words that look like malware names
+                    # Pattern: Words like ShadowPad, CobaltStrike, SpyderLoader, RPipeCommander
+                    candidates = set()
+
+                    # Pattern 1: CamelCase or compound names (2+ capital letters in a word)
+                    for m in _re.finditer(r'\b([A-Z][a-z]+(?:[A-Z][a-z]+)+)\b', text):
+                        candidates.add(m.group(1))
+
+                    # Pattern 2: Known suffixes for tools/malware
+                    tool_suffixes = [
+                        r'(?:Loader|Backdoor|RAT|Dropper|Stealer|Implant|Beacon|Agent|'
+                        r'Commander|Injector|Downloader|Rootkit|Wiper|Ransomware|Trojan|'
+                        r'Keylogger|Exploit|Payload|Shell|Miner|Botnet|Proxy|Tunnel)'
+                    ]
+                    for suffix_pat in tool_suffixes:
+                        for m in _re.finditer(r'\b(\w+' + suffix_pat + r')\b', text):
+                            candidates.add(m.group(1))
+
+                    # Pattern 3: Known malware names commonly seen in threat reports
+                    known_malware = [
+                        'ShadowPad', 'Cobalt Strike', 'Mimikatz', 'Metasploit',
+                        'PlugX', 'Spyder', 'RPipeCommander', 'ScatterBee',
+                        'NightDoor', 'Brute Ratel', 'Sliver', 'SodaMaster',
+                        'IcedID', 'QakBot', 'Emotet', 'TrickBot', 'BazarLoader',
+                        'Beacon', 'Meterpreter', 'BloodHound', 'Rubeus',
+                        'SharpHound', 'LaZagne', 'PsExec', 'WinPEAS',
+                        'LinPEAS', 'Chisel', 'Ngrok', 'Impacket',
+                        'DynoWiper', 'PromptSpy', 'MiniDump',
+                    ]
+                    for name in known_malware:
+                        if name.lower() in text_lower:
+                            candidates.add(name)
+
+                    # Filter: must appear at least twice in text (reduces noise)
+                    # and must not be a known threat actor group name
+                    known_actors_lower = {a.lower() for a in parsed_result.get("threat_actors", [])}
+                    # Also exclude campaign names (they go in "campaigns", not tools)
+                    known_campaigns_lower = {c.lower() for c in parsed_result.get("campaigns", [])}
+                    # Common non-malware words and security vendor names to exclude
+                    exclude_lower = {
+                        # Generic words
+                        'microsoft', 'windows', 'linux', 'google', 'facebook',
+                        'twitter', 'github', 'figure', 'table', 'overview',
+                        'appendix', 'references', 'conclusion', 'background',
+                        'however', 'moreover', 'furthermore', 'therefore',
+                        'indicators', 'compromise', 'research', 'attribution',
+                        'javascript', 'powershell', 'typescript', 'dockerfile',
+                        # Abbreviations that aren't tools
+                        'iocs', 'ttps', 'cves', 'apts',
+                        # Security vendors (not malware)
+                        'sentinelone', 'crowdstrike', 'mandiant', 'fireeye',
+                        'kaspersky', 'symantec', 'mcafee', 'trendmicro',
+                        'paloalto', 'fortinet', 'checkpoint', 'sophos',
+                        'bitdefender', 'carbonblack', 'cylance', 'webroot',
+                        'malwarebytes', 'avast', 'norton', 'eset',
+                        # Common non-tool CamelCase words
+                        'youtube', 'linkedin', 'facebook', 'stackoverflow',
+                        'wordpress', 'outlook', 'onedrive', 'sharepoint',
+                        'virustotal', 'hybridanalysis', 'anyrun',
+                    }
+
+                    extracted_tools = []
+                    for candidate in candidates:
+                        c_lower = candidate.lower()
+                        if c_lower in known_actors_lower:
+                            continue
+                        if c_lower in known_campaigns_lower:
+                            continue
+                        if c_lower in exclude_lower:
+                            continue
+                        if len(candidate) < 3:
+                            continue
+                        # Must appear in text (already guaranteed by regex, but double-check)
+                        occurrences = text_lower.count(c_lower)
+                        if occurrences >= 2:
+                            extracted_tools.append(candidate)
+
+                    if extracted_tools:
+                        parsed_result["tools_or_malware"] = extracted_tools
+                        logger.info(f"Text-based extraction found {len(extracted_tools)} tools/malware: {extracted_tools}")
+
+                result = json.dumps(parsed_result)
+            except Exception as halluc_err:
+                logger.warning(f"Anti-hallucination check failed (non-critical): {halluc_err}")
+
+        # ── Sparse result retry ───────────────────────────────────────
+        # If the AI returned very few IoCs despite a long article, retry
+        # with a simplified, extraction-focused prompt (no restrictive rules)
+        if parsed_ok and len(text) > 2000:
+            try:
+                parsed_result = json.loads(result) if isinstance(result, str) else result
+                ioc = parsed_result.get("indicators_of_compromise", {})
+                total_iocs = sum(len(v) for v in ioc.values() if isinstance(v, list))
+                total_ttps = len(parsed_result.get("ttps", []))
+
+                if total_iocs + total_ttps < 5:
+                    logger.warning(
+                        f"Sparse IoC result ({total_iocs} IoCs, {total_ttps} TTPs) from "
+                        f"{len(text)} char article. Retrying with simplified extraction prompt."
+                    )
+                    # Use a DIFFERENT, simpler prompt — no few-shot, no restrictive rules
+                    retry_prompt = (
+                        "Extract EVERY indicator of compromise and MITRE ATT&CK technique from this threat report.\n"
+                        "Be exhaustive. Include ALL: IP addresses, domains, URLs, email addresses, "
+                        "file hashes (MD5/SHA1/SHA256), filenames, file paths, registry keys, "
+                        "process names, command-line strings, and behavioral TTPs.\n"
+                        "Include tools/malware names, threat actor names, CVEs, and campaigns.\n"
+                        "For TTPs, map EVERY observed behavior to the most specific MITRE technique.\n\n"
+                        "Return ONLY valid JSON with this structure:\n"
+                        '{"sigma_title":"...","sigma_description":"...",'
+                        '"indicators_of_compromise":{"ips":[],"domains":[],"urls":[],"email_addresses":[],'
+                        '"file_hashes":[],"filenames":[],"registry_keys":[],"process_names":[],"malicious_commands":[]},'
+                        '"ttps":[{"mitre_id":"TXXXX.XXX","technique_name":"","tactic":"","description":""}],'
+                        '"suspicious_patterns":[],"process_chains":[],"cves":[],'
+                        '"tools_or_malware":[],"threat_actors":[],"campaigns":[],'
+                        '"malicious_execution_chains":[],"image_based_indicators":[],'
+                        '"obfuscations_refanged":[],"confidence_level":"high/medium/low","notes":""}\n\n'
+                        "THREAT REPORT:\n" + text
+                    )
+                    retry_messages = [
+                        Message(role="system", content=(
+                            "You are a threat intelligence IoC extraction engine. "
+                            "Extract ALL indicators exhaustively. Output valid JSON only."
+                        )),
+                        Message(role="user", content=retry_prompt),
+                    ]
+                    retry_response = ai.generate(retry_messages, temperature=0.2)
+                    _track_usage(retry_response, "extract_iocs_ttps_retry")
+
+                    retry_cleaned = extract_json_from_response(retry_response.content)
+                    retry_valid, retry_parsed = OutputValidator.validate_json(retry_cleaned)
+                    if retry_valid and isinstance(retry_parsed, dict):
+                        retry_ioc = retry_parsed.get("indicators_of_compromise", {})
+                        retry_total = sum(len(v) for v in retry_ioc.values() if isinstance(v, list))
+                        retry_ttps = len(retry_parsed.get("ttps", []))
+
+                        if retry_total + retry_ttps > total_iocs + total_ttps:
+                            _, retry_validated, _ = OutputValidator.validate_ioc_response(retry_parsed)
+                            result = json.dumps(retry_validated)
+                            logger.info(
+                                f"Retry improved results: {retry_total} IoCs, {retry_ttps} TTPs "
+                                f"(was {total_iocs} IoCs, {total_ttps} TTPs)"
+                            )
+                        else:
+                            logger.info("Retry did not improve results, keeping original")
+            except Exception as retry_err:
+                logger.warning(f"Sparse result retry failed (non-critical): {retry_err}")
 
         # Only cache successfully parsed results
         if parsed_ok:
@@ -360,7 +623,7 @@ def convert_sigma_to_siem_queries(
     """Convert Sigma rules to SIEM queries with validation."""
     try:
         cache = get_cache()
-        cache_key = ResponseCache._make_key("siem_convert", sigma_rules[:500], provider_name)
+        cache_key = ResponseCache._make_key("siem_convert", PROMPT_VERSION, sigma_rules[:500], provider_name)
         cached = cache.get(cache_key)
         if cached:
             logger.info("Returning cached SIEM queries")
@@ -380,8 +643,11 @@ def convert_sigma_to_siem_queries(
         response = ai.generate(messages, temperature=0.1)
         _track_usage(response, "convert_siem_queries")
 
+        # Strip markdown code fences before JSON parsing
+        cleaned_content = extract_json_from_response(response.content)
+
         # Validate and repair output
-        is_valid, parsed = OutputValidator.validate_json(response.content)
+        is_valid, parsed = OutputValidator.validate_json(cleaned_content)
         if is_valid and isinstance(parsed, dict):
             _, validated, warnings = OutputValidator.validate_siem_response(parsed)
             if warnings:
@@ -423,7 +689,7 @@ def generate_atomic_tests_from_sigma(
     """Generate Atomic Red Team test scenarios for each Sigma rule."""
     try:
         cache = get_cache()
-        cache_key = ResponseCache._make_key("atomic_tests", sigma_rules[:500], provider_name)
+        cache_key = ResponseCache._make_key("atomic_tests", PROMPT_VERSION, sigma_rules[:500], provider_name)
         cached = cache.get(cache_key)
         if cached:
             logger.info("Returning cached atomic tests")
@@ -516,6 +782,61 @@ def generate_atomic_tests_from_sigma(
         return []
 
 
+################################################################################
+# Generate Threat Hunting Queries
+################################################################################
+
+@with_retry(max_retries=2, base_delay=2.0)
+def generate_threat_hunting_queries(
+    threat_summary: str,
+    ttps_summary: str,
+    iocs_summary: str,
+    openai_api_key: str = "",
+    model_name: str = None,
+    reasoning_effort: str = "high",
+    provider: Optional[AIProvider] = None,
+    provider_name: str = "openai",
+) -> dict:
+    """Generate comprehensive behavior-based threat hunting queries for each SIEM platform."""
+    try:
+        cache = get_cache()
+        cache_key = ResponseCache._make_key("hunting", PROMPT_VERSION, threat_summary[:300], provider_name)
+        cached = cache.get(cache_key)
+        if cached:
+            logger.info("Returning cached hunting queries")
+            return cached
+
+        ai = _resolve_provider(provider, openai_api_key, provider_name, model_name)
+
+        messages = [
+            Message(role="system", content=PromptTemplates.THREAT_HUNTING_SYSTEM),
+            Message(role="user", content=PromptTemplates.THREAT_HUNTING_GENERATION_COT.format(
+                threat_summary=threat_summary[:2000],
+                ttps_summary=ttps_summary[:1500],
+                iocs_summary=iocs_summary[:1500],
+            )),
+        ]
+
+        logger.info(f"Generating threat hunting queries using {ai.provider_name}")
+        response = ai.generate(messages, temperature=0.1)
+        _track_usage(response, "generate_hunting_queries")
+
+        cleaned = extract_json_from_response(response.content)
+        is_valid, parsed = OutputValidator.validate_json(cleaned)
+
+        if is_valid and isinstance(parsed, dict):
+            cache.set(cache_key, parsed)
+            logger.info("Threat hunting queries generated successfully")
+            return parsed
+
+        logger.warning("Hunting query generation returned invalid JSON")
+        return {}
+
+    except Exception as e:
+        logger.error(f"Error generating hunting queries: {e}", exc_info=True)
+        return {}
+
+
 def create_fallback_siem_queries(sigma_rules: str) -> dict:
     """Create basic SIEM queries as fallback when AI conversion fails."""
     try:
@@ -555,7 +876,7 @@ def create_fallback_siem_queries(sigma_rules: str) -> dict:
         return {
             "splunk": {"description": "Splunk SPL (fallback)", "query": splunk_query, "notes": fallback_note},
             "qradar": {"description": "QRadar AQL (fallback)", "query": qradar_query, "notes": fallback_note},
-            "elastic": {"description": "Elasticsearch (fallback)", "query": str(elastic_query).replace("'", '"'), "notes": fallback_note},
+            "elastic": {"description": "Elasticsearch (fallback)", "query": json.dumps(elastic_query, indent=2), "notes": fallback_note},
             "sentinel": {"description": "Sentinel KQL (fallback)", "query": sentinel_query, "notes": fallback_note},
         }
     except Exception as e:

@@ -3,211 +3,169 @@
 ## Quick Start
 
 ### Prerequisites
-- Docker (20.10+)
-- Docker Compose (1.29+)
+- Docker Engine 20.10+
+- Docker Compose v2+
 
 ### Installation Steps
 
 1. **Clone the repository**
    ```bash
    git clone https://github.com/dipsh0v/PERSEPTOR.git
-   cd PERSEPTOR/docker
+   cd PERSEPTOR
    ```
 
-2. **Configure environment variables (Optional)**
+2. **Configure environment**
    ```bash
-   # Copy the environment template
-   cp ENV_TEMPLATE .env
-   
-   # Edit .env to customize ports, paths, and URLs
-   nano .env
+   cp .env.example .env
+   # Edit .env and add at least one AI provider API key:
+   #   OPENAI_API_KEY=sk-...
+   #   or ANTHROPIC_API_KEY=sk-ant-...
+   #   or GOOGLE_API_KEY=AI...
    ```
-   
-   All configuration has sensible defaults, so you can skip this step if you want to use:
-   - Frontend: Port 3000
-   - Backend: Port 5000 (internal only)
 
-3. **Start the containers**
+3. **Build and start containers**
    ```bash
-   docker-compose up -d --build
+   cd docker
+   docker compose up -d --build
    ```
 
 4. **Access the application**
-   - Frontend: http://localhost:3000 (or custom port from .env)
-   - Backend API: Internal only - accessed through nginx proxy
+   - Open http://localhost:3000 in your browser
+   - Go to **Settings** to configure your AI provider and model
+   - Go to **Threat Analysis** to start analyzing
 
 ## Commands
 
-### Start containers
 ```bash
-docker-compose up
-```
+# Start containers
+docker compose up -d
 
-### Start containers in background
-```bash
-docker-compose up -d
-```
+# Start with rebuild
+docker compose up -d --build
 
-### Stop containers
-```bash
-docker-compose down
-```
+# Stop containers
+docker compose down
 
-### Rebuild and start containers
-```bash
-docker-compose up --build
-```
+# View all logs
+docker compose logs -f
 
-### View logs
-```bash
-docker-compose logs -f
-```
+# View backend logs only
+docker compose logs -f backend
 
-### View backend logs only
-```bash
-docker-compose logs -f backend
-```
+# View frontend logs only
+docker compose logs -f frontend
 
-### View frontend logs only
-```bash
-docker-compose logs -f frontend
-```
+# Check container status
+docker compose ps
 
-### Access container shell
-```bash
-# Backend
-docker-compose exec backend bash
+# Restart a service
+docker compose restart backend
+docker compose restart frontend
 
-# Frontend
-docker-compose exec frontend sh
+# Access container shell
+docker compose exec backend bash
+docker compose exec frontend sh
+
+# Clean rebuild (fresh start)
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ## Environment Variables
 
-All configuration is managed through environment variables. You can either:
+All configuration is managed through the `.env` file in the project root. Copy `.env.example` to get started:
 
-1. **Create a .env file** (recommended):
-   ```bash
-   cp ENV_TEMPLATE .env
-   # Edit .env with your values
-   ```
+```bash
+cp .env.example .env
+```
 
-2. **Use environment variables directly**:
-   ```bash
-   FRONTEND_PORT=8080 BACKEND_PORT=5000 docker-compose up
-   ```
-
-### Available Environment Variables
+### Key Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `BACKEND_HOST` | `0.0.0.0` | Backend bind address |
-| `BACKEND_PORT` | `5000` | Backend internal port |
-| `FLASK_ENV` | `development` | Flask environment (development/production) |
-| `FRONTEND_PORT` | `3000` | Frontend external port |
-| `NGINX_PORT` | `3000` | Nginx internal port |
-| `BACKEND_SERVICE` | `backend` | Backend service name in Docker network |
-| `SIGMAHQ_BASE_URL` | `https://github.com/SigmaHQ/sigma/blob/master` | SigmaHQ repository URL |
-| `TESSERACT_CMD` | `/usr/bin/tesseract` | Tesseract OCR binary path |
-| `CHROME_BIN` | `/usr/bin/chromium` | Chrome binary path |
-| `CHROMEDRIVER_PATH` | `/usr/bin/chromedriver` | ChromeDriver path |
+| `OPENAI_API_KEY` | *(empty)* | OpenAI API key |
+| `ANTHROPIC_API_KEY` | *(empty)* | Anthropic API key |
+| `GOOGLE_API_KEY` | *(empty)* | Google AI API key |
+| `DEFAULT_AI_PROVIDER` | `openai` | Default AI provider |
+| `DEFAULT_MODEL` | `gpt-4.1-2025-04-14` | Default AI model |
+| `FLASK_ENV` | `development` | Flask environment |
+| `SECRET_KEY` | `change-me-in-production` | Session encryption key |
+| `LOG_LEVEL` | `INFO` | Logging level (DEBUG/INFO/WARNING/ERROR) |
+| `RATE_LIMIT_PER_MINUTE` | `60` | API rate limit |
+| `SESSION_EXPIRY_HOURS` | `24` | Session timeout |
+| `NGINX_PORT` | `3000` | Frontend port (exposed) |
 
-## Production Deployment
-
-For production environments:
-
-1. **Create .env file**:
-   ```bash
-   cp ENV_TEMPLATE .env
-   ```
-
-2. **Update environment variables**:
-   ```bash
-   # Edit .env
-   FLASK_ENV=production
-   FRONTEND_PORT=80  # Or your preferred port
-   ```
-
-3. **Start containers**:
-   ```bash
-   docker-compose up -d --build
-   ```
-
-## Troubleshooting
-
-### Port conflicts
-If ports 3000 or 5000 are already in use, change them using environment variables:
-
-**Option 1: Using .env file** (recommended):
-```bash
-# Create or edit .env file
-echo "FRONTEND_PORT=8080" >> .env
-echo "BACKEND_PORT=5001" >> .env
-docker-compose up -d --build
-```
-
-**Option 2: Using command line**:
-```bash
-FRONTEND_PORT=8080 docker-compose up -d
-```
-
-### Sigma rules
-Sigma rules are automatically loaded from the `Global_Sigma_Rules/` directory within the project. This directory contains 1100+ Sigma rules and is automatically mounted to the Docker container.
-
-### Restart containers
-```bash
-docker-compose restart backend
-docker-compose restart frontend
-```
-
-### Clean up and restart
-```bash
-docker-compose down -v
-docker-compose up --build
-```
+> **Note:** API keys can also be configured via the **Settings** page in the UI. Keys set in the UI are stored in your browser and never on the server.
 
 ## Architecture
-
-The Docker setup includes:
 
 ### Backend Container
 - **Base:** Python 3.11-slim
 - **Features:**
-  - Tesseract OCR support
-  - Selenium Chrome driver
-  - All Python dependencies
-  - Flask API server
+  - Playwright headless browser for dynamic page rendering
+  - EasyOCR for image text extraction
+  - Multi-provider AI engine (OpenAI, Anthropic, Google)
+  - Flask API server with SSE streaming
+  - SQLite database with WAL mode
+  - Healthcheck enabled (auto-restarts on failure)
+- **Internal port:** 5000 (not exposed externally)
 
 ### Frontend Container
-- **Base:** Node 18 (build) → Nginx Alpine (production)
+- **Base:** Node 18 (build stage) -> Nginx Alpine (production)
 - **Features:**
-  - Multi-stage build for optimized size
-  - Production-ready Nginx configuration
-  - API proxy to backend
+  - Multi-stage build for optimized image size
+  - Nginx reverse proxy to backend API
+  - SSE streaming support (proxy_buffering off)
+  - Gzip compression for static assets
 
 ### Network
 - Custom bridge network for container isolation
-- Automatic DNS resolution between containers
+- Backend is only accessible within the Docker network
+- Frontend nginx proxies /api/* requests to backend
 
 ### Volumes
-- Hot-reload support for development
-- Persistent Sigma rules directory
-- Shared modules between containers
+- `modules/` and `api/` are bind-mounted for live development
+- `Global_Sigma_Rules/` mounted read-only (2,750+ detection rules)
+- Named volume `perseptor-data` persists the SQLite database
 
-## Notes
+## Troubleshooting
 
-- Backend includes Tesseract OCR and Selenium Chrome driver
-- Frontend runs on Nginx with production build
-- Both services have auto-restart capability
-- Network isolation using custom bridge network
-- API requests are proxied from frontend Nginx to backend
+### Port conflicts
+```bash
+# Change the frontend port via environment variable
+NGINX_PORT=8080 docker compose up -d
+
+# Or set in .env file
+# NGINX_PORT=8080
+```
+
+### Backend health check
+```bash
+# Check health via nginx
+curl http://localhost:3000/api/health
+
+# Check container health status
+docker compose ps
+```
+
+### SSE streaming issues
+The nginx config includes dedicated SSE locations with `proxy_buffering off` for the analysis streaming endpoints. If streaming does not work:
+```bash
+# Verify nginx config has SSE blocks
+docker compose exec frontend cat /etc/nginx/conf.d/default.conf
+```
+
+### Sigma rules
+2,750+ community Sigma rules from SigmaHQ are automatically loaded from `Global_Sigma_Rules/` and mounted read-only into the backend container.
 
 ## Security
 
-- Don't commit `.env` file to git in production
-- Keep your OpenAI API key secure
-- Use Docker secrets for sensitive data in production
-- Limit container permissions as needed
+- Never commit `.env` to git (it is in `.gitignore`)
+- Change `SECRET_KEY` in production
+- AI API keys can be set via `.env` or the Settings UI
+- Backend port 5000 is not exposed externally
+- Rate limiting is enabled by default (60 req/min)
 
 ## Support
 

@@ -1,7 +1,11 @@
 FROM python:3.11-slim
 
+# Prevent Python from buffering stdout/stderr (critical for Docker log streaming)
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
 # Install system dependencies for Playwright and OCR
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     curl \
@@ -25,7 +29,7 @@ RUN apt-get update && apt-get install -y \
     libpango-1.0-0 \
     libcairo2 \
     libasound2 \
-    libgl1-mesa-glx \
+    libgl1-mesa-dri \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -34,13 +38,9 @@ WORKDIR /app
 # Install Python dependencies
 RUN pip install --upgrade pip setuptools wheel
 
-# Install main requirements
+# Install requirements (root requirements.txt has all dependencies)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Install API requirements
-COPY api/requirements.txt ./api/requirements.txt
-RUN pip install --no-cache-dir -r api/requirements.txt
 
 # Install Playwright browsers
 RUN playwright install chromium
@@ -48,11 +48,8 @@ RUN playwright install chromium
 # Copy application code
 COPY . .
 
-# Ensure Global_Sigma_Rules is present
-COPY Global_Sigma_Rules /app/Global_Sigma_Rules
-
-# Create data directory for SQLite database
-RUN mkdir -p /app/data && chmod 755 /app/data
+# Create data and logs directories
+RUN mkdir -p /app/data /app/logs && chmod 755 /app/data /app/logs
 
 # Default environment variables
 ENV BACKEND_HOST=0.0.0.0
@@ -61,6 +58,5 @@ ENV DATABASE_PATH=/app/data/perseptor.db
 
 # Run Flask application
 WORKDIR /app/api
-CMD ["python", "app.py"]
-
 EXPOSE 5000
+CMD ["python", "app.py"]

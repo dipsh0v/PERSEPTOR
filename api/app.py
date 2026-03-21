@@ -36,6 +36,7 @@ from modules.ai_engine import (
     generate_more_sigma_rules_from_article,
     convert_sigma_to_siem_queries,
     generate_atomic_tests_from_sigma,
+    generate_threat_hunting_queries,
 )
 from modules.content_fetcher import (
     get_dynamic_image_urls,
@@ -52,7 +53,7 @@ _FETCH_HEADERS = {
                   "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Encoding": "gzip, deflate",
 }
 
 def _smart_fetch_url(url: str) -> tuple:
@@ -138,6 +139,56 @@ def _smart_fetch_url(url: str) -> tuple:
         best_text = soup.get_text(separator="\n", strip=True)
 
     text_content = _re.sub(r'\n{3,}', '\n\n', best_text).strip()
+
+    # Step 1b: Extract structured data from HTML tables (IoC tables, hash tables)
+    # Tables often contain hashes/filenames that get broken across lines with get_text()
+    if not http_failed and soup:
+        table_sections = []
+        for table in soup.find_all("table"):
+            rows = table.find_all("tr")
+            if not rows:
+                continue
+            # Extract header
+            headers_row = rows[0].find_all(["th", "td"])
+            col_headers = [h.get_text(strip=True) for h in headers_row]
+            # Extract data rows
+            data_rows = []
+            for row in rows[1:]:
+                cells = row.find_all(["td", "th"])
+                cell_texts = [c.get_text(separator=" ", strip=True) for c in cells]
+                if any(cell_texts):
+                    data_rows.append(cell_texts)
+            if data_rows:
+                table_text = "\n[TABLE: " + " | ".join(col_headers) + "]\n"
+                for dr in data_rows:
+                    table_text += " | ".join(dr) + "\n"
+                table_sections.append(table_text)
+        if table_sections:
+            text_content += "\n\n[STRUCTURED_TABLES]\n" + "\n".join(table_sections)
+            logger.info(f"Extracted {len(table_sections)} structured tables from HTML")
+
+    # Step 1c: Reconstruct hex hashes broken across lines
+    # SHA-1 (40 chars) and SHA-256 (64 chars) often split across 2 lines in table text
+    def _reconstruct_hashes(text):
+        lines = text.split('\n')
+        reconstructed = []
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            # Check if this line is purely hex chars (potential broken hash)
+            if _re.match(r'^[a-fA-F0-9]{16,32}$', line) and i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                if _re.match(r'^[a-fA-F0-9]{16,32}$', next_line):
+                    combined = line + next_line
+                    if len(combined) in (32, 40, 64):  # MD5, SHA-1, SHA-256
+                        reconstructed.append(f"[HASH-{len(combined)}] {combined}")
+                        i += 2
+                        continue
+            reconstructed.append(lines[i])
+            i += 1
+        return '\n'.join(reconstructed)
+
+    text_content = _reconstruct_hashes(text_content)
 
     # Step 2: If HTTP failed or text is too short, try Playwright for JS-rendered content
     if http_failed or len(text_content) < 200:
@@ -453,6 +504,15 @@ def analyze_url():
                         if platform in ai_siem and platform in siem_queries:
                             existing = siem_queries[platform].get("query", "")
                             ai_query = ai_siem[platform].get("query", "")
+                            # Ensure both are strings (Elastic queries may be dicts)
+                            if isinstance(existing, dict):
+                                existing = json.dumps(existing, indent=2)
+                            elif not isinstance(existing, str):
+                                existing = str(existing)
+                            if isinstance(ai_query, dict):
+                                ai_query = json.dumps(ai_query, indent=2)
+                            elif not isinstance(ai_query, str):
+                                ai_query = str(ai_query)
                             if ai_query and ai_query != "N/A":
                                 siem_queries[platform]["query"] = existing + "\n\n/* AI-Refined */\n" + ai_query
                                 siem_queries[platform]["notes"] = "Includes both IoC-based and AI-refined queries"
@@ -825,8 +885,13 @@ def analyze_url_stream():
                 sigma_matches = []
                 yield sse("sigma_match_done", 80, "Sigma matching failed")
 
-            # ── Stage 4: SIEM queries ─────────────────────────────────
-            yield sse("siem", 82, "Generating SIEM queries...")
+            # ── Combine all Sigma BEFORE SIEM conversion ─────────────
+            all_sigma_yaml = ioc_sigma_yaml
+            if more_sigma_rules:
+                all_sigma_yaml = (all_sigma_yaml + "\n---\n" + more_sigma_rules) if all_sigma_yaml else more_sigma_rules
+
+            # ── Stage 4: SIEM + Hunting queries (parallel) ───────────
+            yield sse("siem", 82, "Generating SIEM detection & hunting queries...")
 
             siem_queries = {
                 "splunk": {"description": "", "query": "", "notes": ""},
@@ -834,49 +899,75 @@ def analyze_url_stream():
                 "elastic": {"description": "", "query": "", "notes": ""},
                 "sentinel": {"description": "", "query": "", "notes": ""},
             }
-
-            def _do_siem_structured():
-                structured = generate_siem_queries(analysis_data)
-                return siem_queries_to_flat(structured)
+            hunting_queries = {}
 
             def _do_siem_ai():
-                if not more_sigma_rules:
+                if not all_sigma_yaml or len(all_sigma_yaml.strip()) < 20:
                     return None
                 return convert_sigma_to_siem_queries(
-                    sigma_rules=more_sigma_rules,
+                    sigma_rules=all_sigma_yaml,
+                    openai_api_key=openai_api_key,
+                    provider_name=provider_name,
+                    model_name=model_name,
+                )
+
+            def _do_hunting():
+                # Build context summaries for hunting
+                ttps_list = analysis_data.get("ttps", [])
+                ttps_str = "; ".join(
+                    f"{t.get('mitre_id', '')} {t.get('technique_name', '')}" if isinstance(t, dict) else str(t)
+                    for t in ttps_list[:15]
+                )
+                iocs = analysis_data.get("indicators_of_compromise", {})
+                iocs_parts = []
+                for k, v in iocs.items():
+                    if isinstance(v, list) and v:
+                        iocs_parts.append(f"{k}: {', '.join(str(x) for x in v[:5])}")
+                iocs_str = "; ".join(iocs_parts)
+                return generate_threat_hunting_queries(
+                    threat_summary=threat_summary,
+                    ttps_summary=ttps_str,
+                    iocs_summary=iocs_str,
                     openai_api_key=openai_api_key,
                     provider_name=provider_name,
                     model_name=model_name,
                 )
 
             with ThreadPoolExecutor(max_workers=2) as executor:
-                future_siem_struct = executor.submit(_do_siem_structured)
                 future_siem_ai = executor.submit(_do_siem_ai)
-
-                try:
-                    siem_queries = future_siem_struct.result(timeout=120)
-                    yield sse("siem_structured_done", 88, "IoC-based SIEM queries ready")
-                except Exception as e:
-                    logger.error(f"SIEM structured error: {e}")
+                future_hunting = executor.submit(_do_hunting)
 
                 try:
                     ai_siem = future_siem_ai.result(timeout=300)
                     if isinstance(ai_siem, dict):
                         for platform in ("splunk", "qradar", "elastic", "sentinel"):
-                            if platform in ai_siem and platform in siem_queries:
-                                existing = siem_queries[platform].get("query", "")
-                                ai_query = ai_siem[platform].get("query", "")
-                                if ai_query and ai_query != "N/A":
-                                    siem_queries[platform]["query"] = existing + "\n\n/* AI-Refined */\n" + ai_query
-                                    siem_queries[platform]["notes"] = "Includes both IoC-based and AI-refined queries"
-                    yield sse("siem_ai_done", 93, "AI-refined SIEM queries ready")
+                            if platform in ai_siem:
+                                q = ai_siem[platform].get("query", "")
+                                if isinstance(q, dict):
+                                    q = json.dumps(q, indent=2)
+                                elif not isinstance(q, str):
+                                    q = str(q)
+                                siem_queries[platform] = {
+                                    "description": ai_siem[platform].get("description", ""),
+                                    "query": q,
+                                    "notes": ai_siem[platform].get("notes", ""),
+                                }
+                    yield sse("siem_done", 88, "SIEM detection queries ready")
                 except Exception as e:
                     logger.error(f"SIEM AI error: {e}")
+                    yield sse("siem_done", 88, "SIEM query generation failed")
 
-            # ── Combine all Sigma ─────────────────────────────────────
-            all_sigma_yaml = ioc_sigma_yaml
-            if more_sigma_rules:
-                all_sigma_yaml = (all_sigma_yaml + "\n---\n" + more_sigma_rules) if all_sigma_yaml else more_sigma_rules
+                try:
+                    hunting_queries = future_hunting.result(timeout=300)
+                    if hunting_queries:
+                        yield sse("hunting_done", 91, "Threat hunting queries ready",
+                                 {"hunting_queries": hunting_queries})
+                    else:
+                        yield sse("hunting_done", 91, "Hunting query generation returned empty")
+                except Exception as e:
+                    logger.error(f"Hunting query error: {e}")
+                    hunting_queries = {}
+                    yield sse("hunting_done", 91, "Hunting query generation failed")
 
             # ── Stage 5: Atomic Red Team Test Scenarios ──────────────
             atomic_tests = []
@@ -894,7 +985,7 @@ def analyze_url_stream():
                              {"atomic_tests": atomic_tests})
                 except Exception as e:
                     logger.error(f"Atomic test generation error: {e}")
-                    yield sse("atomic_tests_done", 97, "Atomic test generation failed")
+                    yield sse("atomic_tests_done", 97, "Atomic test generation failed", {"atomic_tests": []})
 
             # ── Final result ──────────────────────────────────────────
             yield sse("finalizing", 98, "Compiling final report...")
@@ -916,6 +1007,7 @@ def analyze_url_stream():
                 "ioc_sigma_rules": ioc_sigma_rules,
                 "generated_sigma_rules": all_sigma_yaml,
                 "siem_queries": siem_queries,
+                "hunting_queries": hunting_queries,
                 "atomic_tests": atomic_tests,
                 "sigma_matches": sigma_matches,
             }
@@ -1211,8 +1303,13 @@ def analyze_pdf_stream():
                 sigma_matches = []
                 yield sse("sigma_match_done", 80, "Sigma matching failed")
 
-            # ── Stage 4: SIEM queries ─────────────────────────────────
-            yield sse("siem", 82, "Generating SIEM queries...")
+            # ── Combine all Sigma BEFORE SIEM conversion ─────────────
+            all_sigma_yaml = ioc_sigma_yaml
+            if more_sigma_rules:
+                all_sigma_yaml = (all_sigma_yaml + "\n---\n" + more_sigma_rules) if all_sigma_yaml else more_sigma_rules
+
+            # ── Stage 4: SIEM + Hunting queries (parallel) ───────────
+            yield sse("siem", 82, "Generating SIEM detection & hunting queries...")
 
             siem_queries = {
                 "splunk": {"description": "", "query": "", "notes": ""},
@@ -1220,49 +1317,74 @@ def analyze_pdf_stream():
                 "elastic": {"description": "", "query": "", "notes": ""},
                 "sentinel": {"description": "", "query": "", "notes": ""},
             }
-
-            def _do_siem_structured():
-                structured = generate_siem_queries(analysis_data)
-                return siem_queries_to_flat(structured)
+            hunting_queries = {}
 
             def _do_siem_ai():
-                if not more_sigma_rules:
+                if not all_sigma_yaml or len(all_sigma_yaml.strip()) < 20:
                     return None
                 return convert_sigma_to_siem_queries(
-                    sigma_rules=more_sigma_rules,
+                    sigma_rules=all_sigma_yaml,
+                    openai_api_key=openai_api_key,
+                    provider_name=provider_name,
+                    model_name=model_name,
+                )
+
+            def _do_hunting():
+                ttps_list = analysis_data.get("ttps", [])
+                ttps_str = "; ".join(
+                    f"{t.get('mitre_id', '')} {t.get('technique_name', '')}" if isinstance(t, dict) else str(t)
+                    for t in ttps_list[:15]
+                )
+                iocs = analysis_data.get("indicators_of_compromise", {})
+                iocs_parts = []
+                for k, v in iocs.items():
+                    if isinstance(v, list) and v:
+                        iocs_parts.append(f"{k}: {', '.join(str(x) for x in v[:5])}")
+                iocs_str = "; ".join(iocs_parts)
+                return generate_threat_hunting_queries(
+                    threat_summary=threat_summary,
+                    ttps_summary=ttps_str,
+                    iocs_summary=iocs_str,
                     openai_api_key=openai_api_key,
                     provider_name=provider_name,
                     model_name=model_name,
                 )
 
             with ThreadPoolExecutor(max_workers=2) as executor:
-                future_siem_struct = executor.submit(_do_siem_structured)
                 future_siem_ai = executor.submit(_do_siem_ai)
-
-                try:
-                    siem_queries = future_siem_struct.result(timeout=120)
-                    yield sse("siem_structured_done", 88, "IoC-based SIEM queries ready")
-                except Exception as e:
-                    logger.error(f"SIEM structured error: {e}")
+                future_hunting = executor.submit(_do_hunting)
 
                 try:
                     ai_siem = future_siem_ai.result(timeout=300)
                     if isinstance(ai_siem, dict):
                         for platform in ("splunk", "qradar", "elastic", "sentinel"):
-                            if platform in ai_siem and platform in siem_queries:
-                                existing = siem_queries[platform].get("query", "")
-                                ai_query = ai_siem[platform].get("query", "")
-                                if ai_query and ai_query != "N/A":
-                                    siem_queries[platform]["query"] = existing + "\n\n/* AI-Refined */\n" + ai_query
-                                    siem_queries[platform]["notes"] = "Includes both IoC-based and AI-refined queries"
-                    yield sse("siem_ai_done", 93, "AI-refined SIEM queries ready")
+                            if platform in ai_siem:
+                                q = ai_siem[platform].get("query", "")
+                                if isinstance(q, dict):
+                                    q = json.dumps(q, indent=2)
+                                elif not isinstance(q, str):
+                                    q = str(q)
+                                siem_queries[platform] = {
+                                    "description": ai_siem[platform].get("description", ""),
+                                    "query": q,
+                                    "notes": ai_siem[platform].get("notes", ""),
+                                }
+                    yield sse("siem_done", 88, "SIEM detection queries ready")
                 except Exception as e:
                     logger.error(f"SIEM AI error: {e}")
+                    yield sse("siem_done", 88, "SIEM query generation failed")
 
-            # ── Combine all Sigma ─────────────────────────────────────
-            all_sigma_yaml = ioc_sigma_yaml
-            if more_sigma_rules:
-                all_sigma_yaml = (all_sigma_yaml + "\n---\n" + more_sigma_rules) if all_sigma_yaml else more_sigma_rules
+                try:
+                    hunting_queries = future_hunting.result(timeout=300)
+                    if hunting_queries:
+                        yield sse("hunting_done", 91, "Threat hunting queries ready",
+                                 {"hunting_queries": hunting_queries})
+                    else:
+                        yield sse("hunting_done", 91, "Hunting query generation returned empty")
+                except Exception as e:
+                    logger.error(f"Hunting query error: {e}")
+                    hunting_queries = {}
+                    yield sse("hunting_done", 91, "Hunting query generation failed")
 
             # ── Stage 5: Atomic Red Team ──────────────────────────────
             atomic_tests = []
@@ -1280,7 +1402,7 @@ def analyze_pdf_stream():
                              {"atomic_tests": atomic_tests})
                 except Exception as e:
                     logger.error(f"Atomic test generation error: {e}")
-                    yield sse("atomic_tests_done", 97, "Atomic test generation failed")
+                    yield sse("atomic_tests_done", 97, "Atomic test generation failed", {"atomic_tests": []})
 
             # ── Final result ──────────────────────────────────────────
             yield sse("finalizing", 98, "Compiling final report...")
@@ -1302,6 +1424,7 @@ def analyze_pdf_stream():
                 "ioc_sigma_rules": ioc_sigma_rules,
                 "generated_sigma_rules": all_sigma_yaml,
                 "siem_queries": siem_queries,
+                "hunting_queries": hunting_queries,
                 "atomic_tests": atomic_tests,
                 "sigma_matches": sigma_matches,
             }

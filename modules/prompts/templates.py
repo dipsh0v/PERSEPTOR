@@ -63,80 +63,128 @@ class PromptTemplates:
 
     # ─── Chain-of-Thought User Prompts ───────────────────────────────────
 
-    THREAT_SUMMARY_COT = """Analyze the following threat report text using this step-by-step reasoning process:
+    THREAT_SUMMARY_COT = """Analyze the following threat report and produce a structured intelligence briefing.
 
-STEP 1 - IDENTIFY THREAT CONTEXT:
-Think about: What type of threat is described? (APT, ransomware, vulnerability exploitation, etc.)
-Who are the likely targets? What is the threat actor's motivation?
+You are writing for SOC analysts and detection engineers. Be direct, precise, technical.
 
-STEP 2 - EXTRACT KEY FINDINGS:
-Identify: CVEs/vulnerabilities with severity, targeted sectors/regions, campaign overview,
-the attack narrative (how the attack unfolds from initial access to impact).
+OUTPUT FORMAT — Use EXACTLY this structure with these headers (use the unicode characters shown):
 
-STEP 3 - ASSESS IMPACT:
-Evaluate: What is the overall severity? What is the potential blast radius?
-What defensive gaps does this exploit?
+━━━ THREAT OVERVIEW
+[1-2 sentences: What is this threat? Who is behind it? What type of campaign?]
 
-STEP 4 - RECOMMEND ACTIONS:
-Determine: Immediate mitigations, detection priorities, long-term defensive improvements.
+━━━ ATTACK NARRATIVE
+[Step-by-step walkthrough of the attack chain. Number each phase:]
+[1. Initial Access — how the attacker gets in]
+[2. Execution — what runs first]
+[3. Persistence — how they maintain access]
+[4. Lateral Movement — how they spread]
+[5. Objective — data theft, ransomware, espionage, etc.]
+[Only include phases that apply. Be specific about techniques used at each phase.]
+
+━━━ TARGET PROFILE
+[Who is targeted? Sectors, regions, organization types. Why these targets?]
+
+━━━ IMPACT ASSESSMENT
+[Severity rating (Critical/High/Medium/Low). Blast radius. What defensive gaps does this exploit?]
+
+━━━ RECOMMENDED ACTIONS
+[Numbered list of concrete defensive actions, prioritized by urgency:]
+[1. Immediate — block/patch/isolate actions]
+[2. Short-term — detection rule deployment, hunting queries]
+[3. Strategic — architecture changes, process improvements]
 
 CONSTRAINTS:
-- Plain text output only, no markdown formatting
-- Maximum 300 words
+- Maximum 400 words total
 - State "Not identified" for missing data points
-- Be precise with technical details
-- DO NOT list IoCs (IPs, domains, hashes, emails, file names) — they are extracted separately
-- DO NOT list MITRE ATT&CK technique IDs or TTPs — they are mapped separately
-- DO NOT list tools or malware family names as bullet points — they are extracted separately
-- Focus on the NARRATIVE: what happened, who did it, why, how it impacts defenders, and what to do about it
+- Be precise with technical details (exact CVE IDs, specific tool names in context)
+- DO NOT list IoCs (IPs, domains, hashes) — they are extracted separately
+- DO NOT list MITRE ATT&CK technique IDs — they are mapped separately
+- DO NOT list tools/malware as standalone bullet lists — they are extracted separately
+- Focus on the NARRATIVE and ACTIONABLE INTELLIGENCE
 
 TEXT TO ANALYZE:
 {text}"""
 
-    IOC_EXTRACTION_COT = """Analyze the following text and extract ONLY genuine threat indicators using this reasoning chain.
+    IOC_EXTRACTION_COT = """Analyze the following text and extract ALL threat indicators using this reasoning chain.
 You are an elite threat intelligence analyst. Your IoC extraction feeds directly into detection rules and SOC workflows.
-FALSE POSITIVES DESTROY ANALYST TRUST — precision is more important than recall.
+
+CRITICAL FILTERING RULES — READ CAREFULLY:
+You are analyzing a SCRAPED WEB PAGE. The text contains both the actual threat report AND website boilerplate
+(navigation, headers, footers, image URLs, social media links, cookie notices, author bios, related articles).
+You MUST distinguish between ACTUAL THREAT IoCs and PAGE ARTIFACTS.
 
 STEP 1 - SCAN FOR NETWORK INDICATORS:
 Look for: IP addresses (IPv4/IPv6), domain names, full URLs, email addresses.
 Note: Refang any defanged indicators (hxxp -> http, [.] -> ., etc.)
 
-CRITICAL FALSE POSITIVE RULES — DO NOT include:
-- Contact/author/support email addresses (e.g., threatintel@company.com, info@vendor.com, support@security.org)
-- Only include email addresses that are DIRECTLY used in the attack (phishing sender, C2 comms, exfiltration target)
-- Vendor/researcher/company domains that are PUBLISHERS of the report, not IOCs (e.g., eset.com, paloaltonetworks.com, trellix.com, microsoft.com)
-- Private/reserved IP ranges (10.x.x.x, 192.168.x.x, 127.0.0.1) unless explicitly described as C2
-- Generic infrastructure IPs (DNS resolvers like 8.8.8.8, CDN IPs) unless explicitly malicious
-- Social media profile URLs of researchers/companies
-- GitHub repository URLs of security tools used for analysis (not by attackers)
-- Legitimate software process names (svchost.exe, explorer.exe, chrome.exe) UNLESS the report describes them being abused/impersonated
+MANDATORY EXCLUSIONS — DO NOT extract these:
+- The report publisher's own domains and subdomains (e.g., welivesecurity.com, esetstatic.com, eset.com, crowdstrike.com, mandiant.com, trendmicro.com, paloaltonetworks.com, microsoft.com/security, etc.)
+- Image/asset URLs from the article page (URLs containing /wls/, /assets/, /build/, /static/, /images/, /figures/, .png, .jpg, .gif, .webp, .svg, .css, .js)
+- Social media URLs (twitter.com, linkedin.com, facebook.com, youtube.com, github.com/user-profile-pages)
+- Government/reference website domains that are NOT attacker infrastructure (fbi.gov, cisa.gov, nist.gov, attack.mitre.org, virustotal.com)
+- Contact/support email addresses of the report publisher
+- Private/reserved IP ranges (10.x.x.x, 192.168.x.x, 127.0.0.1) unless described as C2 or attacker infrastructure
+- Generic public DNS resolvers (8.8.8.8, 1.1.1.1) unless explicitly flagged as malicious
+
+ONLY INCLUDE network indicators that are described as:
+- C2 (command and control) servers or infrastructure
+- Malware download/staging URLs
+- Phishing domains
+- Attacker-controlled infrastructure
+- Indicators explicitly listed in an "IoC" or "Indicators" section of the report
 
 STEP 2 - SCAN FOR HOST INDICATORS:
 Look for: File hashes (MD5/SHA1/SHA256), file names/paths, registry keys,
 process names, mutex names, scheduled tasks, service names.
 
-FALSE POSITIVE RULES:
-- Only include process names that are MALICIOUS or ABUSED (e.g., malware binaries, renamed legitimate tools)
-- Do NOT include standard Windows processes unless they are explicitly part of the attack chain
-- File paths must be specific to the malware, not generic Windows paths
-- Registry keys must be specific persistence/configuration entries
+MANDATORY EXCLUSIONS for hashes:
+- Hex constants from code snippets (e.g., 0x3000u, 0x40u, 0x829EE0DE) — these are NOT file hashes
+- File hashes MUST be: MD5 (exactly 32 hex chars), SHA1 (exactly 40 hex chars), or SHA256 (exactly 64 hex chars)
+- If a hash does not match one of these lengths, DO NOT include it
+
+For process_names: Only include processes that are MALICIOUS or SUSPICIOUS, not common Windows system DLLs
+(ntdll.dll, kernel32.dll, user32.dll, etc.) unless they are being abused in an unusual way described in the report.
+
+Include ALL filenames and paths mentioned in the attack chain, including legitimate tools that were abused.
+Include ALL registry keys related to persistence, configuration, or the attack.
 
 STEP 3 - IDENTIFY BEHAVIORAL INDICATORS:
 Look for: Command-line patterns, PowerShell scripts, process chains,
 lateral movement techniques, persistence mechanisms, exfiltration methods.
-Only extract commands that are UNIQUE to this attack, not generic examples.
+Extract ALL commands mentioned in the report, including API call sequences from code analysis.
 
 STEP 4 - MAP TO MITRE ATT&CK:
-For each behavior found, map to the MOST SPECIFIC MITRE technique/sub-technique.
-Use format TXXXX.XXX where applicable.
-CRITICAL: For each TTP, include a DETAILED description explaining:
-- WHY this technique was mapped (what specific behavior in the report triggered this mapping)
-- HOW the threat actor uses this technique
-- WHAT evidence from the report supports this mapping
+For EVERY observable behavior, map to the most specific MITRE technique/sub-technique.
+Use format TXXXX.XXX where applicable. Be thorough — a typical APT report maps to 8-15+ techniques.
 
-STEP 5 - IDENTIFY THREAT METADATA:
-Look for: Threat actor names/aliases, malware family names, campaign names,
-CVE identifiers, targeted sectors.
+CRITICAL: Only map techniques that are EXPLICITLY described or demonstrated in the report.
+- DO NOT guess or infer techniques that "might" or "likely" exist
+- DO NOT say "Although not explicitly shown..." — if it's not shown, don't include it
+- Each mapping MUST cite specific evidence FROM the report text
+- Confidence should reflect actual evidence, not speculation
+
+For each TTP, include a description explaining:
+- What SPECIFIC behavior in the report triggered this mapping (quote or paraphrase the evidence)
+- How the threat actor uses this technique
+
+STEP 5 - IDENTIFY THREAT METADATA (THIS STEP IS CRITICAL — DO NOT SKIP):
+
+threat_actors: ONLY named APT groups, hacker groups, or established threat actor aliases.
+- DO NOT include individual people's names (researchers, arrested suspects, company employees, authors)
+- DO NOT include company/organization names unless they ARE the threat actor
+- Examples of valid threat actors: APT29, Lazarus Group, FIN7, Aquatic Panda, Sandworm
+- Examples of INVALID entries: "John Smith" (researcher), "Wu Haibo" (i-Soon employee)
+
+tools_or_malware: Extract EVERY malware family, hacking tool, backdoor, loader, implant, or software used in the attacks.
+THIS IS ONE OF THE MOST IMPORTANT FIELDS. Threat reports always mention tools and malware — search carefully!
+- Scan the ENTIRE text for any named software used by the threat actors
+- Look for words ending in: Loader, Backdoor, RAT, Dropper, Stealer, Implant, Commander, Shell
+- Look for CamelCase compound words that name specific malware (e.g., ShadowPad, CobaltStrike, ScatterBee)
+- Include legitimate tools abused by attackers (e.g., PsExec, Mimikatz, Cobalt Strike)
+- DO NOT include threat actor names (Aquatic Panda is NOT a tool)
+- DO NOT include company names (i-Soon is NOT malware)
+- Every entry MUST appear in the source text — do NOT fabricate names
+- If the report mentions 5 different malware families, you MUST list all 5
 
 Return a VALID JSON with this exact structure:
 {{
@@ -153,7 +201,7 @@ Return a VALID JSON with this exact structure:
     "process_names": [],
     "malicious_commands": []
   }},
-  "ttps": [{{"mitre_id": "TXXXX.XXX", "technique_name": "", "tactic": "", "description": "Detailed explanation of why this technique was mapped and what evidence supports it"}}],
+  "ttps": [{{"mitre_id": "TXXXX.XXX", "technique_name": "", "tactic": "", "description": "Specific evidence from the report that supports this mapping"}}],
   "suspicious_patterns": [],
   "process_chains": [],
   "cves": [],
@@ -168,37 +216,60 @@ Return a VALID JSON with this exact structure:
 }}
 
 IMPORTANT: Return ONLY the JSON object. No text before or after.
-REMEMBER: Quality over quantity. A SOC analyst receiving 5 precise IoCs is far more effective than 50 noisy ones.
+IMPORTANT: Quality over quantity. 5 real IoCs are infinitely better than 30 contaminated ones.
+IMPORTANT: EVERY item you return MUST appear verbatim in the source text. Do NOT fabricate, guess, or hallucinate any indicators. If a hash, domain, IP, or tool name does not literally appear in the text above, do NOT include it.
+IMPORTANT: tools_or_malware MUST NOT be empty if the report discusses any malware, backdoors, loaders, or hacking tools. Read the text carefully and extract ALL named malware families and tools.
+If the report contains NO real network IoCs (no C2 domains, no malicious IPs), return empty arrays — that is CORRECT.
 
 Text to analyze:
 {text}"""
 
-    SIGMA_GENERATION_COT = """Generate comprehensive Sigma detection rules from this threat report using step-by-step reasoning:
+    SIGMA_GENERATION_COT = """You are an expert detection engineer writing production-grade Sigma rules.
+Your rules will be deployed in real SOC environments. Quality over quantity.
 
-STEP 1 - IDENTIFY DETECTION OPPORTUNITIES:
-What observable events does this threat produce? Process creation, file writes,
-registry modifications, network connections, DNS queries?
+Analyze this threat report and generate 5-10 focused Sigma rules covering DIFFERENT detection surfaces.
 
-STEP 2 - DESIGN DETECTION LOGIC:
+STEP 1 - MAP THE ATTACK SURFACE:
+Identify every detectable behavior in the report. Categorize by log source:
+- Process Creation (Sysmon EID 1, Security 4688) — command lines, parent-child chains
+- File Events (Sysmon EID 11, 15, 23) — file drops, alternate data streams
+- Registry Events (Sysmon EID 12, 13, 14) — persistence keys, config changes
+- Network Connections (Sysmon EID 3, firewall logs) — C2 callbacks, lateral movement
+- DNS Queries (Sysmon EID 22) — suspicious domain patterns
+- Image Load / DLL (Sysmon EID 7) — sideloading, injection
+- Pipe Events (Sysmon EID 17, 18) — named pipe C2, lateral movement
+- WMI / Scheduled Tasks — persistence and execution
+
+STEP 2 - DESIGN EACH RULE:
 For each detection opportunity:
-- What fields should be matched? (CommandLine, Image, TargetFilename, etc.)
-- What patterns indicate malicious vs benign activity?
-- What filter conditions reduce false positives?
+- Choose the MOST SPECIFIC fields. Prefer CommandLine contains patterns over just Image.
+- Use selection + filter + condition pattern. Add filter conditions to reduce false positives.
+- Set appropriate severity: critical (confirmed malicious unique to this threat), high (strong signal), medium (behavioral, needs tuning), low (informational).
+- Think about WHICH EXACT behavior from the report this rule catches.
 
-STEP 3 - STRUCTURE SIGMA RULES:
-Follow SigmaHQ conventions:
-- title, id (UUID), status, description, references, author (PERSEPTOR), date, tags
-- logsource with proper category/product/service
-- detection using selection + filter + condition
-- fields, falsepositives, level
+STEP 3 - FOLLOW SIGMAHQ CONVENTIONS:
+Each rule MUST have:
+- title: descriptive, starts with verb or noun (e.g., "Suspicious DLL Sideloading via...")
+- id: valid UUIDv4
+- status: experimental
+- description: what this rule detects and WHY it's suspicious
+- references: leave empty array
+- author: PERSEPTOR
+- date: 2025/01/01
+- tags: proper MITRE format (attack.initial_access, attack.t1566.001)
+- logsource: with correct category/product/service
+- detection: selection + filter + condition using proper Sigma modifiers (contains, endswith, startswith, re, all)
+- fields: list relevant fields for triage
+- falsepositives: realistic FP scenarios
+- level: critical/high/medium/low
 
-STEP 4 - VALIDATE AND OPTIMIZE:
-- Are all YAML syntax elements correct?
-- Do tags use proper MITRE format (attack.tXXXX)?
-- Is the severity level appropriate?
-- Are false positive notes realistic?
+STEP 4 - QUALITY CHECK:
+- NO duplicate detection logic across rules
+- Each rule targets a DIFFERENT phase/behavior of the attack
+- YAML syntax is correct (proper indentation, no tabs, correct list formats)
+- Field names match SigmaHQ standards (CommandLine not commandline, Image not image)
 
-OUTPUT FORMAT: Valid YAML only. Multiple rules separated with '---'. No commentary.
+OUTPUT FORMAT: Valid YAML only. Multiple rules separated with '---'. No text before or after.
 
 Article text:
 {article_text}
@@ -396,6 +467,88 @@ RESPOND WITH ONLY THIS JSON ARRAY (no other text):
     "safety_notes": "Any warnings about AV triggers, system impact, etc."
   }}
 ]"""
+
+    # ─── Threat Hunting ──────────────────────────────────────────────────
+
+    THREAT_HUNTING_SYSTEM = (
+        "You are a senior threat hunter with deep expertise in proactive threat detection "
+        "across enterprise SIEM platforms. You build comprehensive, behavior-based hunting "
+        "queries that help analysts discover threats that evade signature-based detection.\n\n"
+        "PRINCIPLES:\n"
+        "- Hunting queries focus on BEHAVIORS, not just IoCs\n"
+        "- Each query should be a self-contained investigation playbook\n"
+        "- Include inline comments explaining each section\n"
+        "- Mark tunable thresholds and environment-specific values with [CUSTOMIZE]\n"
+        "- Queries must be syntactically correct and production-ready\n"
+        "- You ALWAYS respond with ONLY valid JSON - no explanations, no markdown."
+    )
+
+    THREAT_HUNTING_GENERATION_COT = """Generate comprehensive threat hunting queries based on the threat report analysis.
+
+You are creating a SINGLE comprehensive hunting query per SIEM platform that covers the full behavioral
+footprint of this threat. These queries are for PROACTIVE HUNTING, not alerting — they cast a wider net
+than detection rules and help analysts discover variants and related activity.
+
+CONTEXT:
+- Threat Summary: {threat_summary}
+- Key TTPs: {ttps_summary}
+- Key IoCs context: {iocs_summary}
+
+STEP 1 - IDENTIFY HUNTABLE BEHAVIORS:
+What are the key behavioral patterns an analyst should hunt for?
+Think beyond exact IoC matches — focus on:
+- Process execution chains and parent-child relationships
+- Unusual network patterns (beaconing, rare domains, high-entropy DNS)
+- File system activity patterns (staging directories, temp file patterns)
+- Authentication anomalies (lateral movement, privilege escalation)
+- Persistence mechanism patterns
+
+STEP 2 - BUILD ONE COMPREHENSIVE QUERY PER PLATFORM:
+Each query should:
+- Cover multiple related behaviors in a single investigation query
+- Use inline comments (/* ... */ or // for Splunk, -- for QRadar/Sentinel) explaining each section
+- Mark values that analysts should customize with [CUSTOMIZE] tags
+- Include time-range recommendations
+- Use efficient query patterns (avoid full table scans)
+- Group related detections with OR logic within the query
+- Include a summary comment at the top explaining the hunting hypothesis
+
+STEP 3 - PLATFORM-SPECIFIC OPTIMIZATION:
+- Splunk: Use proper SPL with eval, stats, where. Use index= and sourcetype= specifications.
+- QRadar: Use AQL with proper property names, GROUPBY, HAVING for threshold-based hunting.
+- Elastic: Use KQL format with proper field names and boolean operators.
+- Sentinel: Use KQL with let statements, extend, summarize for correlation.
+
+RESPOND WITH ONLY THIS JSON STRUCTURE:
+{{
+  "hunting_hypothesis": "One sentence describing what we're hunting for",
+  "splunk": {{
+    "query": "Full SPL query with inline comments",
+    "description": "What this query hunts for",
+    "recommended_timerange": "e.g., Last 30 days",
+    "expected_results": "What to look for in results"
+  }},
+  "qradar": {{
+    "query": "Full AQL query with inline comments",
+    "description": "What this query hunts for",
+    "recommended_timerange": "e.g., LAST 30 DAYS",
+    "expected_results": "What to look for in results"
+  }},
+  "elastic": {{
+    "query": "Full KQL query with inline comments",
+    "description": "What this query hunts for",
+    "recommended_timerange": "e.g., now-30d",
+    "expected_results": "What to look for in results"
+  }},
+  "sentinel": {{
+    "query": "Full KQL query with inline comments",
+    "description": "What this query hunts for",
+    "recommended_timerange": "e.g., 30d",
+    "expected_results": "What to look for in results"
+  }}
+}}
+
+NO OTHER TEXT. ONLY THE JSON OBJECT."""
 
     YARA_GENERATION_COT = """Generate YARA rules for this threat using step-by-step analysis:
 

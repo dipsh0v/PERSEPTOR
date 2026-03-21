@@ -57,7 +57,7 @@ class AnthropicProvider(AIProvider):
         messages: List[Message],
         model: Optional[str] = None,
         temperature: float = 0.1,
-        max_tokens: int = 4096,
+        max_tokens: int = 16384,
         **kwargs,
     ) -> AIResponse:
         model_id = self._resolve_model(model)
@@ -93,6 +93,14 @@ class AnthropicProvider(AIProvider):
         for block in response.content:
             if hasattr(block, "text"):
                 content += block.text
+            elif hasattr(block, "thinking"):
+                # Extended thinking blocks - log but don't include in output
+                logger.debug(f"Thinking block ({len(block.thinking)} chars): {block.thinking[:200]}")
+            elif block.type == "thinking":
+                # Alternative thinking block format
+                thinking_text = getattr(block, "thinking", "") or getattr(block, "text", "")
+                if thinking_text:
+                    logger.debug(f"Thinking block ({len(thinking_text)} chars): {thinking_text[:200]}")
 
         usage = TokenUsage(
             prompt_tokens=response.usage.input_tokens if response.usage else 0,
@@ -118,7 +126,7 @@ class AnthropicProvider(AIProvider):
             raw_response=response,
         )
 
-    def generate_stream(self, messages, model=None, temperature=0.1, max_tokens=4096, **kwargs):
+    def generate_stream(self, messages, model=None, temperature=0.1, max_tokens=16384, **kwargs):
         """Stream response chunks using Anthropic streaming API."""
         model_id = self._resolve_model(model)
 

@@ -2,13 +2,72 @@ server {
     listen ${NGINX_PORT};
     server_name localhost;
 
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml;
+    gzip_min_length 256;
+
+    # Static frontend files
     location / {
         root /usr/share/nginx/html;
         index index.html index.htm;
         try_files $uri $uri/ /index.html;
     }
 
-    # Proxy API requests to backend (using Docker service name)
+    # SSE streaming endpoint (must be BEFORE the general /api block)
+    location /api/analyze/stream {
+        proxy_pass http://${BACKEND_SERVICE}:${BACKEND_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Connection '';
+
+        # Critical for SSE: disable all buffering
+        proxy_buffering off;
+        proxy_cache off;
+        chunked_transfer_encoding on;
+
+        # SSE-specific headers
+        add_header X-Accel-Buffering no;
+        add_header Cache-Control no-cache;
+
+        # Long timeout for analysis (10 minutes)
+        proxy_connect_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+        send_timeout 600s;
+    }
+
+    # PDF upload streaming endpoint
+    location /api/analyze/pdf/stream {
+        proxy_pass http://${BACKEND_SERVICE}:${BACKEND_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Connection '';
+
+        # Critical for SSE: disable all buffering
+        proxy_buffering off;
+        proxy_cache off;
+        chunked_transfer_encoding on;
+
+        # SSE-specific headers
+        add_header X-Accel-Buffering no;
+        add_header Cache-Control no-cache;
+
+        # Allow large PDF uploads (50MB)
+        client_max_body_size 50m;
+
+        # Long timeout for analysis (10 minutes)
+        proxy_connect_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+        send_timeout 600s;
+    }
+
+    # General API proxy
     location /api {
         proxy_pass http://${BACKEND_SERVICE}:${BACKEND_PORT};
         proxy_http_version 1.1;
@@ -18,13 +77,14 @@ server {
         proxy_cache_bypass $http_upgrade;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header Origin http://perseptor-frontend:${NGINX_PORT};
-        
-        # Increase timeout for long-running analysis (10 minutes)
+
+        # Allow file uploads (PDF)
+        client_max_body_size 50m;
+
+        # Timeout for long-running requests (10 minutes)
         proxy_connect_timeout 600s;
         proxy_send_timeout 600s;
         proxy_read_timeout 600s;
         send_timeout 600s;
     }
 }
-

@@ -3,6 +3,7 @@ PERSEPTOR v2.0 - AI Provider Factory
 Creates and caches provider instances based on configuration.
 """
 
+import threading
 from typing import Optional, Dict, List
 from modules.ai.base_provider import AIProvider, ModelInfo
 from modules.logging_config import get_logger
@@ -11,6 +12,7 @@ logger = get_logger("ai.factory")
 
 # Provider instance cache: (provider_name, api_key_hash) -> AIProvider
 _provider_cache: Dict[str, AIProvider] = {}
+_provider_lock = threading.Lock()
 
 
 def _hash_key(api_key: str) -> str:
@@ -46,47 +48,50 @@ def get_provider(
 
     cache_key = f"{provider_name}:{_hash_key(api_key)}"
 
-    if cache_key in _provider_cache:
-        provider = _provider_cache[cache_key]
-        # Update default model if specified
-        if model:
-            provider.default_model = model
-        return provider
+    # Thread-safe cache check + creation to prevent triple initialization
+    # from ThreadPoolExecutor concurrent calls
+    with _provider_lock:
+        if cache_key in _provider_cache:
+            provider = _provider_cache[cache_key]
+            # Update default model if specified
+            if model:
+                provider.default_model = model
+            return provider
 
-    provider_name = provider_name.lower().strip()
+        provider_name = provider_name.lower().strip()
 
-    if provider_name == "openai":
-        from modules.ai.openai_provider import OpenAIProvider
-        provider = OpenAIProvider(
-            api_key=api_key,
-            default_model=model or "gpt-4.1-2025-04-14",
-            **kwargs,
-        )
+        if provider_name == "openai":
+            from modules.ai.openai_provider import OpenAIProvider
+            provider = OpenAIProvider(
+                api_key=api_key,
+                default_model=model or "gpt-4.1-2025-04-14",
+                **kwargs,
+            )
 
-    elif provider_name == "anthropic":
-        from modules.ai.anthropic_provider import AnthropicProvider
-        provider = AnthropicProvider(
-            api_key=api_key,
-            default_model=model or "claude-sonnet-4-20250514",
-            **kwargs,
-        )
+        elif provider_name == "anthropic":
+            from modules.ai.anthropic_provider import AnthropicProvider
+            provider = AnthropicProvider(
+                api_key=api_key,
+                default_model=model or "claude-sonnet-4-20250514",
+                **kwargs,
+            )
 
-    elif provider_name == "google":
-        from modules.ai.google_provider import GoogleProvider
-        provider = GoogleProvider(
-            api_key=api_key,
-            default_model=model or "gemini-2.5-flash",
-            **kwargs,
-        )
+        elif provider_name == "google":
+            from modules.ai.google_provider import GoogleProvider
+            provider = GoogleProvider(
+                api_key=api_key,
+                default_model=model or "gemini-2.5-flash",
+                **kwargs,
+            )
 
-    else:
-        raise ValueError(
-            f"Unsupported provider: '{provider_name}'. "
-            f"Supported: openai, anthropic, google"
-        )
+        else:
+            raise ValueError(
+                f"Unsupported provider: '{provider_name}'. "
+                f"Supported: openai, anthropic, google"
+            )
 
-    _provider_cache[cache_key] = provider
-    logger.info(f"Created new {provider_name} provider (cached)")
+        _provider_cache[cache_key] = provider
+        logger.info(f"Created new {provider_name} provider (cached)")
     return provider
 
 

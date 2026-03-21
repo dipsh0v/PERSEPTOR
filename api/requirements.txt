@@ -1,15 +1,26 @@
-flask>=3.0.0
+# API requirements - kept in sync with root requirements.txt
+# Install from root: pip install -r requirements.txt
+
+flask>=2.3.0
 flask-cors>=4.0.0
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 openai>=1.30.0
 anthropic>=0.30.0
 google-generativeai>=0.5.0
-Pillow>=10.0.0
 easyocr>=1.7.0
+Pillow>=10.0.0
+numpy>=1.24.0
 playwright>=1.40.0
-pyyaml>=6.0.1
-pysigma>=0.10.0
 PyPDF2>=3.0.0
+pysigma>=0.10.0
+pyyaml>=6.0.0
+rich>=13.0.0
+nltk>=3.8.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+pandas>=2.0.0
+reportlab>=4.0.0
 python-dotenv>=1.0.0
+typing-extensions>=4.8.0
 cryptography>=41.0.0

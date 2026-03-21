@@ -1,182 +1,78 @@
-# PERSEPTOR Dynamic Configuration Checklist
+# PERSEPTOR Configuration Checklist
 
-Bu checklist, tüm statik bağlantıların dinamik environment variable'lara dönüştürüldüğünü doğrulamak için kullanılır.
+## Environment Variable Configuration
 
-## ✅ Tamamlanan Değişiklikler
+### Docker Compose (docker-compose.yml)
+- [x] Backend environment variables with defaults
+- [x] AI API keys passthrough from .env
+- [x] `env_file` with `required: false` for optional .env
+- [x] Backend healthcheck enabled
+- [x] Frontend depends on backend healthy state
+- [x] Backend only uses `expose` (not accessible externally)
+- [x] Named volume for persistent SQLite data
 
-### 1. Docker Compose (docker-compose.yml)
-- [x] Backend port dinamik: `${BACKEND_PORT:-5000}`
-- [x] Backend environment variables tanımlı
-- [x] Frontend port dinamik: `${FRONTEND_PORT:-3000}`
-- [x] Frontend environment variables tanımlı
-- [x] Backend sadece `expose` kullanıyor (dışarıya kapalı)
-- [x] Tüm değişkenler default value içeriyor
+### Backend Dockerfile (Dockerfile.backend)
+- [x] PYTHONUNBUFFERED=1 for log streaming
+- [x] BACKEND_HOST and BACKEND_PORT environment variables
+- [x] Playwright chromium installed
+- [x] Data and logs directories created
 
-### 2. Backend Dockerfile (Dockerfile.backend)
-- [x] CHROME_BIN environment variable
-- [x] CHROMEDRIVER_PATH environment variable
-- [x] TESSERACT_CMD environment variable
-- [x] BACKEND_HOST environment variable
-- [x] BACKEND_PORT environment variable
+### Frontend Dockerfile (Dockerfile.frontend)
+- [x] Multi-stage build (Node build + Nginx serve)
+- [x] nginx.conf.template with envsubst
+- [x] docker-entrypoint.sh for dynamic config
+- [x] NGINX_PORT, BACKEND_SERVICE, BACKEND_PORT variables
 
-### 3. Frontend Dockerfile (Dockerfile.frontend)
-- [x] nginx.conf.template kullanımı
-- [x] docker-entrypoint.sh eklendi
-- [x] NGINX_PORT environment variable
-- [x] BACKEND_SERVICE environment variable
-- [x] BACKEND_PORT environment variable
-- [x] ENTRYPOINT script olarak ayarlandı
+### Nginx Configuration
+- [x] SSE streaming endpoint with proxy_buffering off
+- [x] PDF upload streaming endpoint with proxy_buffering off
+- [x] General API proxy with 10-minute timeout
+- [x] Gzip compression enabled
+- [x] client_max_body_size 50m for PDF uploads
+- [x] Dynamic variables via envsubst
 
-### 4. Nginx Configuration
-- [x] nginx.conf.template oluşturuldu
-- [x] ${NGINX_PORT} dinamik port
-- [x] ${BACKEND_SERVICE} dinamik service name
-- [x] ${BACKEND_PORT} dinamik backend port
-- [x] Timeout ayarları eklendi (600s)
+### Backend Code (api/app.py)
+- [x] Reads config from environment via modules/config.py
+- [x] CORS origins configurable
+- [x] Accept-Encoding: gzip, deflate (no Brotli)
+- [x] Structured JSON logging
 
-### 5. Backend Code (api/app.py)
-- [x] BACKEND_HOST environment variable'dan okunuyor
-- [x] BACKEND_PORT environment variable'dan okunuyor
-- [x] FLASK_ENV environment variable'dan okunuyor
-- [x] Hardcoded CORS origin kaldırıldı
-- [x] Flask-CORS tüm origin'leri kabul ediyor
+### Modules Configuration (modules/config.py)
+- [x] AI provider keys from environment
+- [x] Database path configurable
+- [x] Cache settings configurable
+- [x] Security settings (CORS, rate limit, session expiry)
+- [x] Logging configuration
 
-### 6. Python Modules
-- [x] `modules/content_fetcher.py` - TESSERACT_CMD dinamik
-- [x] `modules/content_fetcher.py` - CHROME_BIN dinamik
-- [x] `modules/sigma_matcher.py` - SIGMAHQ_BASE_URL dinamik
+## Test Steps
 
-### 7. Frontend Code (React)
-- [x] `perseptor-ui/src/services/api.ts` - Relative URL kullanıyor (`/api`)
-- [x] `perseptor-ui/src/pages/CreatedRules.tsx` - Relative URL kullanıyor
-- [x] Tüm API çağrıları nginx proxy üzerinden
-
-### 8. Documentation
-- [x] ENV_TEMPLATE dosyası oluşturuldu
-- [x] README.md güncellendi
-- [x] Environment variable tablosu eklendi
-- [x] Kullanım örnekleri eklendi
-
-### 9. Test Scripts
-- [x] test_env_vars.sh oluşturuldu
-- [x] Executable yapıldı
-
-## 🧪 Test Adımları
-
-### Adım 1: Docker Container'ları Başlat
+### Step 1: Start containers
 ```bash
-cd /home/dipsh0v/PERSEPTOR
-docker-compose down
-docker-compose up --build -d
+cd docker
+docker compose up -d --build
 ```
 
-### Adım 2: Environment Variables Testi
+### Step 2: Verify health
 ```bash
-cd /home/dipsh0v/PERSEPTOR/docker
-./test_env_vars.sh
+curl http://localhost:3000/api/health
+docker compose ps
 ```
 
-### Adım 3: Manual Test
+### Step 3: Check nginx config
 ```bash
-# Backend environment variables
-docker-compose exec backend printenv | grep -E "BACKEND|FLASK|TESSERACT|CHROME|SIGMA"
-
-# Frontend environment variables
-docker-compose exec frontend printenv | grep -E "NGINX|BACKEND"
-
-# Nginx configuration
-docker-compose exec frontend cat /etc/nginx/conf.d/default.conf
+docker compose exec frontend cat /etc/nginx/conf.d/default.conf
 ```
 
-### Adım 4: Network Connectivity Test
+### Step 4: Verify backend environment
 ```bash
-# Frontend'den backend'e ping
-docker-compose exec frontend ping -c 3 backend
-
-# API test
-curl http://localhost:3000/api/rules
+docker compose exec backend printenv | grep -E "OPENAI|ANTHROPIC|GOOGLE|DEFAULT|FLASK|DATABASE"
 ```
 
-### Adım 5: Port Exposure Test
+### Step 5: Network connectivity
 ```bash
-# Backend'in dışarıya kapalı olduğunu doğrula (başarısız olmalı)
-curl http://localhost:5000/api/rules
+# Should work (via nginx)
+curl http://localhost:3000/api/health
 
-# Frontend üzerinden (başarılı olmalı)
-curl http://localhost:3000/api/rules
+# Should fail (backend not exposed)
+curl http://localhost:5000/api/health 2>&1 | head -1
 ```
-
-## 🔒 Güvenlik Kontrolleri
-
-- [ ] Backend port 5000 dışarıya açık DEĞİL
-- [ ] Sadece frontend port 3000 dışarıya açık
-- [ ] Backend'e sadece Docker network içinden erişilebiliyor
-- [ ] CORS ayarları doğru çalışıyor
-- [ ] Nginx proxy doğru çalışıyor
-
-## 🎯 Özel Konfigürasyon Testi
-
-### Farklı Portlarla Test
-```bash
-# .env dosyası oluştur
-cat > /home/dipsh0v/PERSEPTOR/docker/.env << EOF
-FRONTEND_PORT=8080
-BACKEND_PORT=5001
-FLASK_ENV=production
-EOF
-
-# Yeniden başlat
-docker-compose down
-docker-compose up --build -d
-
-# Test et
-curl http://localhost:8080/api/rules
-```
-
-## 📊 Beklenen Sonuçlar
-
-### Environment Variables
-- Tüm değişkenler container'larda set olmalı
-- Default değerler kullanılmalı (eğer .env yoksa)
-- .env dosyası varsa, oradaki değerler kullanılmalı
-
-### Network
-- Frontend → Backend iletişimi çalışmalı
-- Backend sadece internal network'te erişilebilir olmalı
-- External → Backend direkt erişimi başarısız olmalı
-
-### Configuration
-- Nginx config dinamik olarak generate edilmeli
-- Backend doğru port ve host'ta çalışmalı
-- Tesseract ve Chrome doğru path'leri kullanmalı
-
-## ⚠️ Bilinen Sınırlamalar
-
-### Docker Olmayan Durumlar
-Aşağıdaki dosyalar Docker kullanılmadığında hardcoded değerler içerir (local development için):
-- `main.py` - Local Flask development server (CORS: localhost:3000)
-- `DEATHCon 2025/setup_workshop.py` - Workshop setup script
-
-Bu dosyalar Docker deployment'ında kullanılmaz, bu yüzden sorun yaratmaz.
-
-## 🔄 Değişiklik Sonrası Checklist
-
-Yeni bir değişiklik yaptıktan sonra:
-1. [ ] Docker container'ları yeniden build et
-2. [ ] test_env_vars.sh çalıştır
-3. [ ] Manual API testi yap
-4. [ ] Frontend'den backend connectivity testi yap
-5. [ ] Security testi yap (backend external erişim)
-6. [ ] Log'ları kontrol et: `docker-compose logs`
-
-## 📝 Sonuç
-
-✅ **Tüm statik bağlantılar dinamik environment variable'lara dönüştürüldü!**
-
-- Backend ve Frontend tamamen environment variable bazlı
-- Nginx dinamik olarak konfigüre ediliyor
-- Docker network internal communication çalışıyor
-- Backend external erişime kapalı
-- Dokümantasyon güncel
-- Test script'leri hazır
-

@@ -66,7 +66,7 @@ class AIProvider(ABC):
         messages: List[Message],
         model: Optional[str] = None,
         temperature: float = 0.1,
-        max_tokens: int = 4096,
+        max_tokens: int = 16384,
         **kwargs,
     ) -> AIResponse:
         """
@@ -86,7 +86,7 @@ class AIProvider(ABC):
         messages: List[Message],
         model: Optional[str] = None,
         temperature: float = 0.1,
-        max_tokens: int = 4096,
+        max_tokens: int = 16384,
         **kwargs,
     ):
         """
